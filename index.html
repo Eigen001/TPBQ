@@ -36,7 +36,7 @@ input[type=checkbox]{width:26px;height:26px}
 /* ---------- start ---------- */
 #start{align-items:center;justify-content:center;gap:13px;text-align:center}
 #hero{border-radius:50%;box-shadow:0 0 0 2px rgba(41,240,255,.7),0 0 30px rgba(41,240,255,.35)}
-#logo{font-size:40px;line-height:.95;letter-spacing:4px;color:#fff;text-shadow:-2px 0 var(--mg),2px 0 var(--cy),0 0 22px rgba(41,240,255,.55)}
+#logo{font-size:40px;color:#fff;text-shadow:-2px 0 var(--mg),2px 0 var(--cy),0 0 22px rgba(41,240,255,.55)}
 #logo span{display:block}#logo span:nth-child(2){font-size:56px;color:var(--am);text-shadow:-2px 0 var(--mg),2px 0 var(--cy),0 0 24px rgba(255,176,0,.5)}
 #tag{font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#8f9ad0;letter-spacing:.5px;max-width:320px;font-weight:700}
 #tiers{display:flex;gap:8px}
@@ -146,7 +146,7 @@ input[type=checkbox]{width:26px;height:26px}
 .srow div{flex:1}
 /* ---------- paint mode ---------- */
 #start{gap:9px}
-#logo{font-size:min(40px,5.4vh)}#logo span:nth-child(2){font-size:min(56px,7.6vh)}
+#logo{font-size:min(38px,5vh)}#logo span:nth-child(2){font-size:min(56px,7.6vh)}
 #optRow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 #optRow button{font-size:12px;letter-spacing:1px;padding:7px 9px}
 #optRow button.on{color:var(--ink);background:linear-gradient(#ffc94a,#ff9a00);border-color:#ffe6a8;box-shadow:0 0 16px rgba(255,176,0,.6)}
@@ -170,6 +170,69 @@ input[type=checkbox]{width:26px;height:26px}
 .choice{display:flex;gap:4px;flex-wrap:wrap}
 .choice button{padding:6px 7px;font-size:12px;letter-spacing:0}
 .choice button.sel{color:var(--ink);background:linear-gradient(#ffc94a,#ff9a00);border-color:#ffe6a8}
+/* ---------- shared: logo, names ---------- */
+#logo{display:inline-grid;grid-template-columns:auto auto;column-gap:.3em;align-items:baseline;text-align:left;letter-spacing:1px;line-height:1.05}
+#logo i{font-style:normal;white-space:nowrap}
+#logo b{font-size:1.5em;color:var(--am);font-weight:inherit}
+#custName{font-size:11px;text-align:center;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#cfd6f5;margin:3px 0 4px}
+.pname{font-size:15px;letter-spacing:.5px;margin:0 0 3px 4px;color:#fff}
+.pname small{display:block;font-size:11px;opacity:.75;margin-top:1px}
+#flash small{font-size:24px}
+#rainbow{display:none;flex:none}
+/* ---------- art style: INKED POSTER (default). Classic neon = same page without body.poster ---------- */
+body.poster{--cy:#f4e6c8;--mg:#e2622b;--am:#f2b33d;--ink:#17383f;--panel:#f4e6c8;background:#17383f;color:#f4e6c8;
+  font-family:-apple-system,"SF Pro Display","Inter Display","Inter","Helvetica Neue","Arial Black",Arial,sans-serif;font-weight:900}
+body.poster button{letter-spacing:1px;color:#f4e6c8;border:3px solid #f4e6c8;border-radius:14px;background:none;box-shadow:none}
+body.poster button.pri{background:#e2622b;border-color:#e2622b;border-radius:40px;box-shadow:5px 5px 0 rgba(0,0,0,.45);color:#f4e6c8}
+body.poster #tiers button.sel,body.poster #optRow button.on,body.poster .choice button.sel{background:#f2b33d;color:#17383f;border-color:#f2b33d;box-shadow:3px 3px 0 #d9471f}
+body.poster input{background:#102a30;border-color:#f4e6c8;color:#f4e6c8}
+body.poster #logo{color:#f4e6c8;text-shadow:3px 3px 0 #d9471f;letter-spacing:0}
+body.poster #logo b{color:#f2b33d;-webkit-text-stroke:1.5px #f4e6c8;text-shadow:4px 4px 0 #d9471f}
+body.poster #tag{font-family:inherit;color:#f4e6c8;opacity:.85;font-weight:700}
+body.poster .lbl{color:#f4e6c8;letter-spacing:2px}
+body.poster #tierDesc{color:#f4e6c8;font-weight:700}
+body.poster #version{color:#f4e6c8;opacity:.55}
+body.poster #hero{filter:none}
+body.poster #top{height:clamp(214px,31vh,276px);padding:12px 12px 2px 10px;gap:6px}
+body.poster #desk{justify-content:center}
+body.poster .alien svg{filter:none}
+body.poster .thought{background:#f2b33d;color:#17383f;border:0;border-radius:10px;box-shadow:none;font-size:13px;padding:1px 8px;letter-spacing:0}
+body.poster #custName{color:#f4e6c8;font-size:12px;margin:5px 0 2px}
+body.poster #counter{height:44px;border:0;background:none;box-shadow:none}
+body.poster #timer{font-family:inherit;font-size:36px;background:none;border:0;box-shadow:none;color:#f2b33d;text-shadow:none;padding:0;letter-spacing:0}
+body.poster #timer.low{color:#ff6a4a;text-shadow:none}
+body.poster #bubble{color:#17383f;border:0;border-radius:18px;background:#f4e6c8;box-shadow:5px 5px 0 #e2622b;margin:2px 5px 10px 14px;padding:10px 14px}
+body.poster #bubble:before{border-right-color:#f4e6c8}
+body.poster #orderText{line-height:1.18;width:100%}
+body.poster .oline{gap:.2em}
+body.poster .oline .chip{order:1;border:0;border-radius:.18em;width:.72em;height:.72em}
+body.poster .oline .nm{order:2;flex:1;color:#17383f!important;text-shadow:none;font-size:.46em;letter-spacing:.5px}
+body.poster .oline .pc{order:3;color:#d9471f}
+body.poster #brush span{color:#f4e6c8}
+body.poster #brushCan{border-color:#f2b33d!important;box-shadow:3px 3px 0 #d9471f!important}
+body.poster #brushName{color:#f4e6c8!important}
+body.poster #flash{color:#f2b33d;text-shadow:5px 5px 0 #d9471f}
+body.poster #flash small{color:#f4e6c8;text-shadow:3px 3px 0 rgba(0,0,0,.5);letter-spacing:1px}
+body.poster #cd{color:#f2b33d;text-shadow:6px 6px 0 #d9471f}
+body.poster #bottom{border-top:0;background:#102a30;box-shadow:none}
+body.poster .tile span{color:#f4e6c8;opacity:.8}
+body.poster .tile.sel:before{inset:-5px;border:3px solid #f2b33d;border-radius:17px;box-shadow:4px 4px 0 #d9471f}
+body.poster .tile.sel span{color:#f2b33d;opacity:1}
+body.poster #skip{color:#f4e6c8;background:#e2622b;border-color:#e2622b;border-radius:24px;box-shadow:3px 3px 0 rgba(0,0,0,.45)}
+body.poster #recap,body.poster #settings{background:rgba(23,56,63,.9)}
+body.poster #rainbow{display:block;height:28px;background:linear-gradient(#e2622b 0 25%,#f2b33d 25% 50%,#f4e6c8 50% 75%,#3aa7a3 75%)}
+body.poster .hdr{background:#102a30;border-bottom:0;box-shadow:none}
+body.poster .hdr h2{text-shadow:none;color:#f4e6c8;letter-spacing:1px}
+body.poster .pcard{background:#f4e6c8;color:#17383f;border:0;border-radius:16px;box-shadow:4px 4px 0 #e2622b;padding:9px 11px}
+body.poster .pcard td{color:#17383f!important}
+body.poster .pname{color:#17383f;font-size:17px;letter-spacing:0}
+body.poster .pg{color:#d9471f;text-shadow:none}
+body.poster .pg small{color:#17383f}
+body.poster #totals{background:none;border:0;box-shadow:none}
+body.poster #totals .big{color:#f2b33d;text-shadow:4px 4px 0 #d9471f;letter-spacing:0}
+body.poster #totals .og b{display:inline-block;width:1.35em;height:1.35em;line-height:1.35em;border-radius:50%;background:#f4e6c8;color:#d9471f;text-shadow:none;box-shadow:3px 3px 0 #e2622b}
+body.poster #totals .sm,body.poster .stats,body.poster .hist,body.poster .srow label{color:#f4e6c8}
+body.poster .hist{border-top-color:rgba(244,230,200,.4)}
 </style>
 </head>
 <body>
@@ -178,8 +241,8 @@ input[type=checkbox]{width:26px;height:26px}
 <!-- START -->
 <div id="start" class="screen on">
   <canvas id="hero"></canvas>
-  <div id="logo"><span>TINY</span><span>PLANETS</span><span>BUILT QUICK</span></div>
-  <div id="tag">OMNIGLORP GALACTIC HOLDINGS // PLANETARY FABRICATION DIV. // "WORLDS WHILE YOU WAIT"</div>
+  <div id="logo"><i><b>T</b>iny</i><i><b>P</b>lanets</i><i><b>B</b>uilt</i><i><b>Q</b>uick</i></div>
+  <div id="tag">TPBQ CORP. // PLANETARY FABRICATION // "WORLDS WHILE YOU WAIT"</div>
   <div class="lbl">TERRAINS PER ORDER</div>
   <div id="tiers"></div>
   <div id="tierDesc"></div>
@@ -200,6 +263,7 @@ input[type=checkbox]{width:26px;height:26px}
         <div class="alien next"><div class="thought" id="payNext"></div><div id="svgNext"></div></div>
         <div class="alien act"><div class="thought" id="payActive"></div><div id="svgActive"></div></div>
       </div>
+      <div id="custName"></div>
       <div id="counter"><span id="timer">01:30</span></div>
     </div>
     <div id="bubble"><div id="orderText"></div></div>
@@ -220,6 +284,7 @@ input[type=checkbox]{width:26px;height:26px}
 
 <!-- RECAP -->
 <div id="recap" class="screen">
+  <div id="rainbow"></div>
   <div class="hdr"><h2>QUARTERLY PLANET REVIEW</h2></div>
   <div class="body scroll" id="recapBody"></div>
 </div>
@@ -236,7 +301,7 @@ input[type=checkbox]{width:26px;height:26px}
 
 <script>
 "use strict";
-var VERSION = "v0.6 build 2026-11-15 00:40 (paint)";
+var VERSION = "v0.7 build 2026-11-15 12:45 (poster)";
 
 /*LOGIC-START*/
 /* ================= PURE LOGIC (no DOM) — tested by logic.test.mjs ================= */
@@ -255,6 +320,7 @@ var CONFIG_DEFAULTS = {
   minTargetPct: 6,
   maxTargetPct: 73,
   randomShapes: false,              // new planet shape with every customer
+  artStyle: "poster",               // poster | classic (the earlier neon art)
   musicStyle: "chip",               // chip | lofi | orch | wave
   finishCoveragePct: 99.5,          // planet auto-finishes at this % covered (slivers are forgiven)
   discardEnabled: true,
@@ -335,6 +401,17 @@ function splitPcts(n, min, max, rng) { // n integers summing to 100, each within
   while (rem > 0) { i = randInt(rng, 0, n - 1); if (p[i] < max) { p[i]++; rem--; } }
   return p;
 }
+/* ----- random customer and planet names ----- */
+var ALIEN_TITLES = ["Mr.", "Mrs.", "Ms.", "Dr.", "Lady", "Lord", "Captain", "Madame", "Sir", "Chief", "Professor", "Baron", "Auntie", "Admiral", "Dame", "Uncle"];
+var ALIEN_NAMES = ["Blorbo", "Zib", "Snorvek", "Glorp", "Vex", "Quazzle", "Mubb", "Xanthor", "Plim", "Zorgle", "Wubwub", "Skreel", "Thrax", "Oomla", "Fizzbin", "Krellick", "Bloop", "Yonk", "Drazzle", "Splern", "Gnarf", "Zizzix", "Hork", "Pleeb", "Morbo", "Squee", "Blixt", "Urgo"];
+var PLANET_A = ["Glorb", "Squonk", "Blip", "Wobbl", "Zant", "Kreb", "Floob", "Mox", "Thwip", "Yibb", "Quorn", "Zeeb", "Plonk", "Vorp", "Snarf", "Dingl", "Bort", "Klaxx", "Noob", "Frell", "Gump", "Skrob", "Womp", "Zuul"];
+var PLANET_B = ["ax", "ulon", "aria", "ix", "os", "opolis", "onia", "ara", "ium", "oid", "", "", "us", "eth"];
+var PLANET_C = [" Prime", " IV", " VII", " IX", "-7", "-12", " Minor", " Major", " B", " II", "", "", "", " XL", " Jr."];
+function alienName(rng) { return ALIEN_TITLES[randInt(rng, 0, ALIEN_TITLES.length - 1)] + " " + ALIEN_NAMES[randInt(rng, 0, ALIEN_NAMES.length - 1)]; }
+function planetName(rng) {
+  var n = PLANET_A[randInt(rng, 0, PLANET_A.length - 1)] + PLANET_B[randInt(rng, 0, PLANET_B.length - 1)];
+  return rng() < 0.15 ? "New " + n : n + PLANET_C[randInt(rng, 0, PLANET_C.length - 1)];
+}
 function generateOrder(tier, cfg, rng) {
   var shape = TIER_SHAPES[tier - 1], nNamed = shape[0], hasAny = shape[1];
   var ids = shuffle([1, 2, 3, 4, 5, 6], rng).slice(0, nNamed);
@@ -346,11 +423,13 @@ function generateOrder(tier, cfg, rng) {
   }
   if (hasAny) slots.push({ terrain: ANY, pct: pcts[n - 1] });
   var pr = cfg.payRanges[tier - 1];
-  return {
+  var o = {
     tier: tier, slots: slots, basePay: randInt(rng, pr[0], pr[1]), tint: big,
     look: { head: randInt(rng, 0, 2), eyes: randInt(rng, 1, 3), antenna: randInt(rng, 0, 2) },
     shape: cfg.randomShapes ? SHAPE_NAMES[randInt(rng, 0, SHAPE_NAMES.length - 1)] : "circle"
   };
+  o.name = alienName(rng); o.planet = planetName(rng); // the customer, and what they will call their planet
+  return o;
 }
 
 /* ----- planet shapes: inside(u, v) with u right, v down, both in [-1, 1] ----- */
@@ -596,6 +675,7 @@ var TPBQ = {
   createPaintRound: createPaintRound, paintSpray: paintSpray, paintFinishIfDone: paintFinishIfDone,
   CONFIG_DEFAULTS: CONFIG_DEFAULTS, TERRAINS: TERRAINS, GRADES: GRADES, TIER_SHAPES: TIER_SHAPES, ANY: ANY,
   roundHalfUp: roundHalfUp, pctOf: pctOf, makeRng: makeRng, buildDeck: buildDeck, cardDims: cardDims,
+  alienName: alienName, planetName: planetName,
   generateOrder: generateOrder, makeGrid: makeGrid, stampGrid: stampGrid, countGrid: countGrid, isFinished: isFinished, fillBlanks: fillBlanks,
   gradeIndexForSum: gradeIndexForSum, payFor: payFor, scorePlanet: scorePlanet, overallGrade: overallGrade,
   createRound: createRound, roundTick: roundTick, roundPlay: roundPlay, roundSkip: roundSkip, roundDiscard: roundDiscard, summarizeRound: summarizeRound
@@ -620,6 +700,7 @@ var CONFIG = clone(CONFIG_DEFAULTS);
 function sanitizeConfig() {
   CONFIG.GRID = Math.max(8, Math.min(200, CONFIG.GRID | 0));
   if (["chip", "lofi", "orch", "wave"].indexOf(CONFIG.musicStyle) < 0) CONFIG.musicStyle = "lofi";
+  if (CONFIG.artStyle !== "classic") CONFIG.artStyle = "poster";
   CONFIG.brushRadiusPct = Math.max(1, Math.min(200, CONFIG.brushRadiusPct));
   CONFIG.handSize = Math.max(1, Math.min(6, CONFIG.handSize | 0));
   CONFIG.roundSeconds = Math.max(1, CONFIG.roundSeconds);
@@ -1024,17 +1105,90 @@ PAINT[6] = function (x, S, r) { // hills: red rock, sharp faceted ridges (lit le
   }
 };
 function buildTextures() {
-  var S = Math.ceil(Math.max(L.D, L.chPx, L.cwPx)) + 2, key = S + ":" + L.dpr + ":" + Math.round(L.cwPx) + ":" + Math.round(L.chPx);
+  var S = Math.ceil(Math.max(L.D, L.chPx, L.cwPx)) + 2, key = S + ":" + L.dpr + ":" + Math.round(L.cwPx) + ":" + Math.round(L.chPx) + ":" + CONFIG.artStyle;
   if (key === texKey) return;
   texKey = key; chipURL = {};
   for (var id = 0; id <= 6; id++) {
     var c = document.createElement("canvas"); c.width = c.height = Math.ceil(S * L.dpr);
-    var x = c.getContext("2d"); x.scale(L.dpr, L.dpr); PAINT[id](x, S, makeRng(1000 + id * 77)); TEX[id] = c;
+    var x = c.getContext("2d"); x.scale(L.dpr, L.dpr); (POSTER() ? posterPaint(id) : PAINT[id])(x, S, makeRng(1000 + id * 77)); TEX[id] = c;
   }
+}
+
+/* ================= ART STYLE 2: "INKED POSTER" (flat brochure colour + hand-inked map symbols) ================= */
+function POSTER() { return CONFIG.artStyle === "poster"; }
+var PCOL = ["#0f272c", "#3a9654", "#f2b33d", "#2e6ebe", "#46beba", "#cede96", "#d65430"], PINK = "#14262b";
+function inkSym(x, id, r) { // one map symbol, drawn around the origin in a 77-unit cell
+  var k, an, dx, dy; x.beginPath();
+  if (id === 1) { for (k = 0; k < 7; k++) { an = -2.6 + k * 0.35; x.moveTo(0, 16); x.quadraticCurveTo(Math.cos(an) * 10, Math.sin(an) * 10, Math.cos(an) * (20 + r() * 5), -2 + Math.sin(an) * (20 + r() * 5)); } x.moveTo(0, 16); x.lineTo(1, 28); }
+  if (id === 2) { x.moveTo(-28, 6); x.quadraticCurveTo(-6, -18, 10, -2); x.quadraticCurveTo(18, 4, 30, 4); x.stroke(); x.beginPath(); for (k = 0; k < 6; k++) { dx = -16 + r() * 40; dy = 12 + r() * 12; x.moveTo(dx, dy); x.arc(dx, dy, 2, 0, 7); } x.fill(); x.beginPath(); }
+  if (id === 3) { x.moveTo(-28, 0); x.quadraticCurveTo(-18, -13, -8, 0); x.quadraticCurveTo(2, 10, 12, -2); x.quadraticCurveTo(19, -12, 28, -9); }
+  if (id === 4) { x.moveTo(-24, -5 + r() * 2); x.lineTo(20, -5 + r() * 2); x.moveTo(-12, 7); x.lineTo(26, 7 + r() * 2); }
+  if (id === 5) { x.moveTo(-8, -10); x.quadraticCurveTo(-3, 0, 0, 10); x.quadraticCurveTo(1, -2, 2, -14); x.moveTo(0, 10); x.quadraticCurveTo(5, 0, 11, -8); }
+  if (id === 6) { x.moveTo(-30, 14); x.quadraticCurveTo(-10, -26, 2, -20); x.quadraticCurveTo(16, -12, 30, 14); x.stroke(); x.beginPath(); x.lineWidth *= 0.6; for (k = 0; k < 6; k++) { x.moveTo(4 + k * 4, -14 + k * 4); x.lineTo(k * 4.6, 12); } }
+  x.stroke();
+}
+function posterPaint(id) {
+  return function (x, S, r) {
+    var k, row, X, Y, step = 26, sc = step / 77;
+    x.fillStyle = PCOL[id]; x.fillRect(0, 0, S, S);
+    if (id === 0) { // erase: empty canvas with faint crosses
+      x.strokeStyle = "rgba(244,230,200,.5)"; x.lineWidth = 2; x.lineCap = "round"; x.beginPath();
+      for (Y = 15; Y < S; Y += 30) for (X = 15; X < S; X += 30) { x.moveTo(X - 5, Y - 5); x.lineTo(X + 5, Y + 5); x.moveTo(X + 5, Y - 5); x.lineTo(X - 5, Y + 5); }
+      x.stroke(); return;
+    }
+    x.fillStyle = "rgba(255,255,255,.13)";
+    for (k = 0; k < S * S / 7000; k++) { x.beginPath(); x.ellipse(r() * S, r() * S, 16 + r() * 22, 10 + r() * 12, r() * 3, 0, 7); x.fill(); }
+    x.strokeStyle = x.fillStyle = PINK; x.lineCap = "round"; x.lineJoin = "round";
+    for (Y = step / 2, row = 0; Y < S + step; Y += step, row++) for (X = (row % 2 ? step / 2 : 0); X < S + step; X += step) {
+      x.save(); x.translate(X + (r() - 0.5) * 5, Y + (r() - 0.5) * 4); x.scale(sc, sc); x.lineWidth = 3.7 * (0.85 + r() * 0.4); inkSym(x, id, r); x.restore();
+    }
+    var cv = x.canvas, im = x.getImageData(0, 0, cv.width, cv.height), d = im.data, n; // print grain
+    for (k = 0; k < d.length; k += 4) { n = (r() - 0.5) * 22; d[k] += n; d[k + 1] += n; d[k + 2] += n; }
+    x.putImageData(im, 0, 0);
+  };
+}
+function star4(x, X, Y, q) { x.beginPath(); x.moveTo(X, Y - q * 2); x.lineTo(X + q * 0.5, Y - q * 0.5); x.lineTo(X + q * 2, Y); x.lineTo(X + q * 0.5, Y + q * 0.5); x.lineTo(X, Y + q * 2); x.lineTo(X - q * 0.5, Y + q * 0.5); x.lineTo(X - q * 2, Y); x.lineTo(X - q * 0.5, Y - q * 0.5); x.fill(); }
+function drawSpacePoster() {
+  var c = $("bg"), w = L.vw, h = L.vh, d = L.dpr, x = c.getContext("2d"), r = makeRng(42), k;
+  c.width = Math.round(w * d); c.height = Math.round(h * d); c.style.width = w + "px"; c.style.height = h + "px"; x.scale(d, d);
+  x.fillStyle = "#17383f"; x.fillRect(0, 0, w, h);
+  x.fillStyle = "#f4e6c8"; for (k = 0; k < 60; k++) star4(x, r() * w, r() * h, 0.9 + r() * 2.2);
+}
+function drawCardPoster(c, id, w, h, poolAlpha, shadow) {
+  var x = -w / 2, y = -h / 2, d = L.dpr, rad = Math.min(w, h) * 0.26, f = Math.max(3, w * 0.07);
+  if (shadow) { c.fillStyle = "rgba(0,0,0,.45)"; rr(c, x + 3.5, y + 3.5, w, h, rad); c.fill(); }
+  c.fillStyle = "#f4e6c8"; rr(c, x, y, w, h, rad); c.fill();
+  c.save(); rr(c, x + f, y + f, w - 2 * f, h - 2 * f, Math.max(2, rad - f)); c.clip();
+  c.globalAlpha = poolAlpha;
+  if (id === 0) { c.fillStyle = "#17383f"; c.fillRect(x, y, w, h); }
+  else c.drawImage(TEX[id], 0, 0, Math.min(TEX[id].width, w * 1.25 * d), Math.min(TEX[id].height, h * 1.25 * d), x, y, w, h);
+  c.restore();
+  if (id === 0) { var q = w * 0.2; c.strokeStyle = "#f4e6c8"; c.lineWidth = Math.max(2.5, w * 0.08); c.lineCap = "round"; c.beginPath(); c.moveTo(-q, -q); c.lineTo(q, q); c.moveTo(q, -q); c.lineTo(-q, q); c.stroke(); }
+}
+function alienSVGPoster(o) {
+  var k = o.look, head = PCOL[o.tint], shirt = ["#e2622b", "#f2b33d", "#3aa7a3"][k.antenna], ink = PINK, cream = "#f4e6c8";
+  var s = '<svg viewBox="0 0 58 80"><path d="M5 80 Q7 57 29 57 Q51 57 53 80 Z" fill="' + shirt + '" stroke="' + ink + '" stroke-width="2"/>';
+  s += '<path d="M23 58 L29 66 L35 58" fill="none" stroke="' + cream + '" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>';
+  var st = k.antenna === 0 ? [[29, 4]] : k.antenna === 1 ? [[20, 5], [38, 5]] : [[16, 9], [29, 3], [42, 9]];
+  st.forEach(function (a) { s += '<path d="M' + (29 + (a[0] - 29) * 0.5) + ' 16 L' + a[0] + " " + a[1] + '" stroke="' + ink + '" stroke-width="2" fill="none"/><circle cx="' + a[0] + '" cy="' + a[1] + '" r="3" fill="#f2b33d" stroke="' + ink + '" stroke-width="1.5"/>'; });
+  var hf = ' fill="' + head + '" stroke="' + ink + '" stroke-width="2.2" stroke-linejoin="round"/>';
+  if (k.head === 0) s += '<ellipse cx="29" cy="32" rx="14" ry="19"' + hf;
+  else if (k.head === 1) s += '<path d="M14 18 Q14 13 19 13 L39 13 Q44 13 44 18 L42 42 Q29 54 16 42 Z"' + hf;
+  else s += '<path d="M9 34 Q9 12 29 12 Q49 12 49 34 Q42 50 29 50 Q16 50 9 34 Z"' + hf;
+  var ex = k.eyes === 1 ? [[29, 29, 7.5]] : k.eyes === 2 ? [[22, 30, 5.5], [36, 30, 5.5]] : [[19, 31, 4], [29, 26, 4], [39, 31, 4]];
+  ex.forEach(function (e) { s += '<ellipse cx="' + e[0] + '" cy="' + e[1] + '" rx="' + e[2] + '" ry="' + (e[2] * 1.15) + '" fill="' + cream + '" stroke="' + ink + '" stroke-width="1.4"/><circle cx="' + (e[0] + 1) + '" cy="' + (e[1] + 1.5) + '" r="' + (e[2] * 0.42) + '" fill="' + ink + '"/>'; });
+  s += '<path d="M24 43 h10" stroke="' + ink + '" stroke-width="2.2" stroke-linecap="round"/>';
+  return s + "</svg>";
+}
+function applyArt() { // switch between the two art styles (settings)
+  document.body.classList.toggle("poster", POSTER());
+  texKey = ""; builtKey = ""; LY = null; if (L) L.art = null;
+  layout();
 }
 
 /* ----- deep space backdrop ----- */
 function drawSpace() {
+  if (POSTER()) return drawSpacePoster();
   var c = $("bg"), w = L.vw, h = L.vh, d = L.dpr, x = c.getContext("2d"), r = makeRng(42), k, g;
   c.width = Math.round(w * d); c.height = Math.round(h * d); c.style.width = w + "px"; c.style.height = h + "px"; x.scale(d, d);
   g = x.createLinearGradient(0, 0, w * 0.4, h); g.addColorStop(0, "#03040c"); g.addColorStop(0.5, "#0b0e2e"); g.addColorStop(1, "#040a18"); x.fillStyle = g; x.fillRect(0, 0, w, h);
@@ -1099,6 +1253,7 @@ function snapshot() {
 
 /* ----- terrain card = thin chrome frame, corner studs, a pool of terrain. Drawn centred on the origin ----- */
 function drawCard(c, id, w, h, poolAlpha, shadow) {
+  if (POSTER()) return drawCardPoster(c, id, w, h, poolAlpha, shadow);
   var f = Math.max(2.5, w * 0.05), x = -w / 2, y = -h / 2, d = L.dpr, g, k;
   g = c.createLinearGradient(x, y, x + w, y + h);
   [[0, "#ffffff"], [0.2, "#9aa4c2"], [0.42, "#f1f4ff"], [0.6, "#6c7697"], [0.82, "#dfe5f8"], [1, "#7d86a6"]].forEach(function (s) { g.addColorStop(s[0], s[1]); });
@@ -1134,6 +1289,7 @@ function chip(id) {
 function tname(id) { return id === ANY ? "ANY" : TERRAINS[id].name; }
 
 function alienSVG(o, p) {
+  if (POSTER()) return alienSVGPoster(o);
   var base = TERRAINS[o.tint].color, hi = rgb(mix(base, [255, 255, 255], 0.3)), mid = rgb(mix(base, [10, 10, 40], 0.25)), lo = rgb(mix(base, [4, 4, 20], 0.72)), k = o.look, ink = INK;
   var neon = ["#29f0ff", "#ff2bd6", "#ffb000"][k.antenna];
   var s = '<svg viewBox="0 0 58 80"><defs>' +
@@ -1180,12 +1336,13 @@ function buildLayers() { // call when the grid (size / shape) or the screen chan
   }
   var b = baseC.getContext("2d"), o = overC.getContext("2d"), lw = Math.max(2, Math.round(S * 0.16));
   b.clearRect(0, 0, N, N); o.clearRect(0, 0, N, N);
-  b.fillStyle = "#0a1030"; o.fillStyle = "rgba(255,255,255,.11)";
+  var pst = POSTER(); if (pst) lw = Math.max(lw, Math.round(2.5 * L.dpr));
+  b.fillStyle = pst ? "#0f272c" : "#0a1030"; o.fillStyle = pst ? "rgba(244,230,200,.10)" : "rgba(255,255,255,.11)";
   for (i = 0; i < G * G; i++) if (g.inside[i]) {
     x = (i % G) * S; y = ((i / G) | 0) * S; b.fillRect(x, y, S, S);
     if (S >= 4) { o.fillRect(x, y, S, 1); o.fillRect(x, y, 1, S); }
   }
-  o.fillStyle = "rgba(160,235,255,.95)";
+  o.fillStyle = pst ? "#f4e6c8" : "rgba(160,235,255,.95)";
   for (i = 0; i < G * G; i++) if (g.inside[i]) {
     xg = i % G; yg = (i / G) | 0; x = xg * S; y = yg * S;
     if (yg === 0 || !g.inside[i - G]) o.fillRect(x, y, S, lw);
@@ -1229,8 +1386,8 @@ function layout() {
   var D = Math.round(vw * CONFIG.canvasDiameterPct / 100), shrunk = false;
   if (inGame) { var avail = $("mid").clientHeight - 30; if (avail > 60 && D > avail) { D = avail; shrunk = true; } }
   var tw = Math.max(28, Math.min(56, Math.floor((vw - 16 - 46 - 5 * 7) / 7))), th = Math.round(tw * 1.5);
-  var changed = !L || L.vw !== vw || L.vh !== vh || L.dpr !== dpr;
-  L = { dpr: dpr, vw: vw, vh: vh, D: D, Dp: Math.round(D * dpr), cw: 0, ch: 0, cwPx: D * 0.36, chPx: D * 0.54, hw: tw, hh: th, shrunk: shrunk };
+  var changed = !L || L.vw !== vw || L.vh !== vh || L.dpr !== dpr || L.art !== CONFIG.artStyle;
+  L = { dpr: dpr, vw: vw, vh: vh, D: D, Dp: Math.round(D * dpr), cw: 0, ch: 0, cwPx: D * 0.36, chPx: D * 0.54, hw: tw, hh: th, shrunk: shrunk, art: CONFIG.artStyle };
   if (changed) drawSpace();
   buildTextures();
   $("planetWrap").style.width = $("planetWrap").style.height = D + "px";
@@ -1284,7 +1441,7 @@ function selectBrush(id, sound) {
 /* ----- flow ----- */
 function shipped() { // no grade shown mid-round: results wait for the end-of-round review
   var f = $("flash");
-  f.innerHTML = "<small>PLANET " + round.results.length + " SHIPPED</small>";
+  f.innerHTML = "<small>" + round.results[round.results.length - 1].order.planet.toUpperCase() + " SHIPPED</small>";
   f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
 }
 function startRound() {
@@ -1408,7 +1565,7 @@ function showRecap() {
   round.results.forEach(function (p, i) {
     var el = document.createElement("div"); el.className = "pcard";
     el.appendChild(miniPlanet(p.pic));
-    var t = '<table><tr><td>#' + (i + 1) + '</td><td class="n">want</td><td class="n">got</td><td class="n">diff</td></tr>';
+    var t = '<div class="pname">' + p.order.planet + '<small>for ' + p.order.name + '</small></div><table><tr><td>#' + (i + 1) + '</td><td class="n">want</td><td class="n">got</td><td class="n">diff</td></tr>';
     p.rows.forEach(function (r) { t += '<tr><td style="color:' + (r.terrain === ANY ? TCOL[0] : TCOL[r.terrain]) + '">' + tname(r.terrain) + '</td><td class="n">' + r.target + '%</td><td class="n">' + r.actual + '%</td><td class="n">' + r.err + "</td></tr>"; });
     t += '<tr><td colspan="3">SUM DIFF</td><td class="n">' + p.S + '</td></tr><tr><td colspan="4">base ' + p.basePay + " &rarr; paid " + p.paid + " MC &middot; " + p.seconds.toFixed(1) + "s</td></tr></table>";
     var w = document.createElement("div"); w.style.flex = "1"; w.innerHTML = t; el.appendChild(w);
@@ -1437,8 +1594,9 @@ function showRecap() {
 }
 
 /* ----- start screen / settings ----- */
-var STYLE_IDS = ["lofi", "orch", "wave", "chip"], STYLE_NAMES = { lofi: "LO-FI", orch: "ORCHESTRAL", wave: "SYNTHWAVE", chip: "CHIPTUNE" };
+var STYLE_IDS = ["lofi", "orch", "wave", "chip"], STYLE_NAMES = { lofi: "LO-FI", orch: "ORCHESTRAL", wave: "SYNTHWAVE", chip: "CHIPTUNE", poster: "INKED POSTER", classic: "CLASSIC NEON" };
 var SETTINGS = [
+  ["artStyle", "Art style", ["poster", "classic"]],
   ["roundSeconds", "Round seconds"],
   ["GRID", "Planet grid: squares across", [25, 50, 75, 100]], ["GRID", "Planet grid: custom (8-200)"],
   ["canvasDiameterPct", "Planet size % of screen width"], ["brushRadiusPct", "Brush size % of planet"],
@@ -1474,7 +1632,7 @@ function buildSettings() {
       wrap.className = "choice";
       s[2].forEach(function (opt) {
         var b = document.createElement("button"); b.textContent = STYLE_NAMES[opt] || opt; if (CONFIG[k] === opt) b.className = "sel";
-        b.onclick = function () { CONFIG[k] = opt; sanitizeConfig(); saveJSON("tpbq_cfg_main2", CONFIG); if (k === "musicStyle") AudioSys.restyle(); AudioSys.sfx("tap"); buildSettings(); };
+        b.onclick = function () { CONFIG[k] = opt; sanitizeConfig(); saveJSON("tpbq_cfg_main2", CONFIG); if (k === "musicStyle") AudioSys.restyle(); if (k === "artStyle") applyArt(); AudioSys.sfx("tap"); buildSettings(); };
         wrap.appendChild(b);
       });
     } else if (typeof CONFIG_DEFAULTS[k] === "boolean") {
@@ -1499,13 +1657,14 @@ function show(id) {
 }
 function fitOrder() {
   var el = $("orderText"), b = $("bubble"), W = b.clientWidth - 22, H = b.clientHeight - 14, n = round.queue[0].slots.length;
-  var size = Math.min(68, Math.floor(H / n / 1.02));
+  var size = Math.min(68, Math.floor(H / n / (POSTER() ? 1.18 : 1.02)));
   el.style.fontSize = size + "px";
   while (size > 12 && (el.scrollWidth > W || el.offsetHeight > H)) { size--; el.style.fontSize = size + "px"; }
 }
 function updateOrderUI(slide) {
   var a = round.queue[0], n = round.queue[1];
   $("svgActive").innerHTML = alienSVG(a, "a"); $("svgNext").innerHTML = alienSVG(n, "n");
+  $("custName").textContent = a.name;
   $("payActive").textContent = a.basePay + " MC"; $("payNext").textContent = n.basePay + " MC";
   $("orderText").innerHTML = a.slots.map(function (s) {
     return '<div class="oline">' + chip(s.terrain) + '<span class="pc">' + s.pct + '%</span><span class="nm" style="color:' + (s.terrain === ANY ? TCOL[0] : TCOL[s.terrain]) + '">' + tname(s.terrain) + "</span></div>";
@@ -1574,7 +1733,7 @@ $("setClose").onclick = function () {
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   AudioSys.sfx("tap"); buildTiers(); optLabels(); show(settingsFrom); layout();
 };
-$("setReset").onclick = function () { CONFIG = clone(CONFIG_DEFAULTS); saveJSON("tpbq_cfg_main2", CONFIG); AudioSys.applyVolumes(); AudioSys.restyle(); buildSettings(); AudioSys.sfx("bonk"); };
+$("setReset").onclick = function () { CONFIG = clone(CONFIG_DEFAULTS); saveJSON("tpbq_cfg_main2", CONFIG); AudioSys.applyVolumes(); AudioSys.restyle(); applyArt(); buildSettings(); AudioSys.sfx("bonk"); };
 
 /* ----- global guards ----- */
 document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
@@ -1585,6 +1744,7 @@ document.addEventListener("dblclick", function (e) { e.preventDefault(); });
 window.addEventListener("resize", layout);
 window.addEventListener("orientationchange", function () { setTimeout(layout, 250); });
 
+document.body.classList.toggle("poster", POSTER());
 buildTiers(); optLabels(); muteLabels(); layout();
 requestAnimationFrame(function (t) { lastT = t; requestAnimationFrame(frame); });
 </script>
