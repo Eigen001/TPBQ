@@ -39,11 +39,6 @@ input[type=checkbox]{width:26px;height:26px}
 #logo{font-size:40px;color:#fff;text-shadow:-2px 0 var(--mg),2px 0 var(--cy),0 0 22px rgba(41,240,255,.55)}
 #logo span{display:block}#logo span:nth-child(2){font-size:56px;color:var(--am);text-shadow:-2px 0 var(--mg),2px 0 var(--cy),0 0 24px rgba(255,176,0,.5)}
 #tag{font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#8f9ad0;letter-spacing:.5px;max-width:320px;font-weight:700}
-#tiers{display:flex;gap:8px}
-#tiers button{width:48px;height:48px;padding:0;font-size:22px;letter-spacing:0}
-#tiers button.sel{color:var(--ink);background:linear-gradient(#ffc94a,#ff9a00);border-color:#ffe6a8;box-shadow:0 0 18px rgba(255,176,0,.7)}
-#tierDesc{font-size:14px;color:#cfd6f5;height:18px;letter-spacing:1px}
-#playBtn{font-size:32px;padding:10px 60px;letter-spacing:6px}
 #startRow{display:flex;gap:10px}
 #version{font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#6d77ad;font-weight:700}
 .lbl{font-size:13px;letter-spacing:4px;color:var(--cy)}
@@ -72,20 +67,12 @@ input[type=checkbox]{width:26px;height:26px}
 .oline .pc{color:#fff}
 .oline .nm{text-shadow:0 0 .3em currentColor}
 .chip{width:.8em;height:.8em;flex:none;border-radius:2px;border:1.5px solid #cfd6f5;background-size:cover}
-.chip.any{background:conic-gradient(#2fbf5a,#e8a530,#3f7dff,#19c3d6,#86d63c,#c8793a,#2fbf5a)}
 
 /* ---------- game: build bay ---------- */
 #mid{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center}
 #planetWrap{position:relative;flex:none;border-radius:50%;margin-bottom:20px}
 #planetWrap:after{content:"";position:absolute;inset:-8px;border:2px dashed rgba(41,240,255,.6);border-radius:50%;pointer-events:none;animation:spin 50s linear infinite}
 #planet{position:absolute;inset:0;width:100%;height:100%;border-radius:50%}
-#spin{position:absolute;left:8px;bottom:8px;width:90px;height:90px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--cy);
-  background:radial-gradient(circle,rgba(41,240,255,.18),rgba(41,240,255,.03) 72%);box-shadow:inset 0 0 18px rgba(41,240,255,.3)}
-#spin:before{content:"";position:absolute;inset:0;border-radius:50%;border:3px dashed var(--cy);animation:spin 7s linear infinite}
-#spin svg{width:40px;height:40px;animation:spin 3.2s linear infinite}
-#spin b{font-size:13px;letter-spacing:3px;margin-top:1px}
-#spin.on{color:var(--am);background:radial-gradient(circle,rgba(255,176,0,.38),rgba(255,176,0,.05) 72%);box-shadow:0 0 28px rgba(255,176,0,.8)}
-#spin.on:before{border-color:var(--am);animation-duration:1s}#spin.on svg{animation-duration:.45s}
 #fly{position:absolute;left:0;top:0;pointer-events:none;display:none;border-radius:50%;z-index:3}
 #flash{position:absolute;left:0;right:0;top:46%;text-align:center;font-size:150px;line-height:0;pointer-events:none;opacity:0;z-index:4;
   color:var(--am);text-shadow:-3px 0 var(--mg),3px 0 var(--cy),0 0 34px rgba(255,176,0,.8)}
@@ -99,31 +86,13 @@ input[type=checkbox]{width:26px;height:26px}
 /* ---------- game: console ---------- */
 #bottom{flex:none;display:flex;align-items:center;gap:7px;padding:16px 8px 14px 8px;position:relative;
   border-top:2px solid var(--cy);background:linear-gradient(#1a1f40 0,#0b0d20 70%,#06070f 100%);box-shadow:0 -6px 24px rgba(41,240,255,.25)}
-#leftcol{flex:none;width:52px;display:flex;flex-direction:column;gap:9px}
-#pile{height:46px;border:1.5px solid #5a6498;border-radius:4px;background:#080a1c;color:var(--am);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
-#pile span{font-size:22px}#pile b{font-size:10px;letter-spacing:2px;color:#8f9ad0}
 #skip{width:52px;height:48px;padding:0;font-size:15px;letter-spacing:1px;color:var(--mg);border-color:var(--mg);box-shadow:0 0 12px rgba(255,43,214,.5),inset 0 0 12px rgba(255,43,214,.15)}
 #skip.off{visibility:hidden}
 #hand{flex:1;display:flex;gap:7px;justify-content:center;align-items:center}
-.slot{position:relative;flex:none;touch-action:none;animation:bob 3s ease-in-out infinite}
-.slot:nth-child(2){animation-delay:-.75s}.slot:nth-child(3){animation-delay:-1.5s}.slot:nth-child(4){animation-delay:-2.25s}
-@keyframes bob{50%{transform:translateY(-4px)}}
-.slot canvas{position:absolute;left:-12px;top:-12px;pointer-events:none}
-.slot:after{content:"";position:absolute;left:4%;right:4%;bottom:-11px;height:9px;border-radius:50%;background:radial-gradient(ellipse,rgba(41,240,255,.75),rgba(41,240,255,0) 70%)}
-.slot span{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);background:rgba(5,6,15,.85);color:#fff;font-size:10px;letter-spacing:1px;padding:1px 6px;border-radius:2px;pointer-events:none;white-space:nowrap}
-.slot.empty{animation:none;border:1.5px dashed rgba(140,160,255,.25);border-radius:3px}
-.slot.empty canvas,.slot.empty span,.slot.empty:after{display:none}
-.slot.lift canvas,.slot.lift span{opacity:.2}
-#discard{flex:none;width:60px;height:60px;border-radius:50%;position:relative;display:flex;align-items:center;justify-content:center;transition:transform .12s}
-#discard:before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(#ff2bd6,#3a0a6e,#29f0ff,#0a0d22,#ff2bd6);animation:spin 3s linear infinite;box-shadow:0 0 16px rgba(255,43,214,.6)}
-#discard:after{content:"";position:absolute;inset:8px;border-radius:50%;background:radial-gradient(circle,#000 35%,#1a0638 100%);box-shadow:inset 0 0 10px #000}
-#discard b{position:relative;z-index:1;font-size:12px;letter-spacing:1.5px;color:#fff;text-shadow:0 0 7px var(--mg)}
-#discard.hot{transform:scale(1.28)}#discard.hot:before{animation-duration:.5s}
-#discard.off{visibility:hidden}
 #ghost{position:fixed;left:0;top:0;pointer-events:none;z-index:50}
 
 /* ---------- recap / settings ---------- */
-#recap,#settings{background:rgba(3,4,12,.8)}
+#recap,#settings,#page{background:rgba(3,4,12,.8)}
 .hdr{flex:none;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:linear-gradient(#1a1f40,#0b0d20);border-bottom:2px solid var(--cy);box-shadow:0 0 18px rgba(41,240,255,.3)}
 .hdr h2{font-size:19px;color:#fff;letter-spacing:2px;white-space:nowrap;text-shadow:-1.5px 0 var(--mg),1.5px 0 var(--cy)}
 .body{flex:1;min-height:0;padding:12px 12px 30px}
@@ -184,14 +153,12 @@ body.poster{--cy:#f4e6c8;--mg:#e2622b;--am:#f2b33d;--ink:#17383f;--panel:#f4e6c8
   font-family:-apple-system,"SF Pro Display","Inter Display","Inter","Helvetica Neue","Arial Black",Arial,sans-serif;font-weight:900}
 body.poster button{letter-spacing:1px;color:#f4e6c8;border:3px solid #f4e6c8;border-radius:14px;background:none;box-shadow:none}
 body.poster button.pri{background:#e2622b;border-color:#e2622b;border-radius:40px;box-shadow:5px 5px 0 rgba(0,0,0,.45);color:#f4e6c8}
-body.poster #tiers button.sel,body.poster #optRow button.on,body.poster .choice button.sel{background:#f2b33d;color:#17383f;border-color:#f2b33d;box-shadow:3px 3px 0 #d9471f}
-body.poster input{background:#102a30;border-color:#f4e6c8;color:#f4e6c8}
+body.poster body.poster input{background:#102a30;border-color:#f4e6c8;color:#f4e6c8}
 body.poster #logo{color:#f4e6c8;text-shadow:3px 3px 0 #d9471f;letter-spacing:0}
 body.poster #logo b{color:#f2b33d;-webkit-text-stroke:1.5px #f4e6c8;text-shadow:4px 4px 0 #d9471f}
 body.poster #tag{font-family:inherit;color:#f4e6c8;opacity:.85;font-weight:700}
 body.poster .lbl{color:#f4e6c8;letter-spacing:2px}
-body.poster #tierDesc{color:#f4e6c8;font-weight:700}
-body.poster #version{color:#f4e6c8;opacity:.55}
+body.poster body.poster #version{color:#f4e6c8;opacity:.55}
 body.poster #hero{filter:none}
 body.poster #top{height:clamp(214px,31vh,276px);padding:12px 12px 2px 10px;gap:6px}
 body.poster #desk{justify-content:center}
@@ -219,7 +186,7 @@ body.poster .tile span{color:#f4e6c8;opacity:.8}
 body.poster .tile.sel:before{inset:-5px;border:3px solid #f2b33d;border-radius:17px;box-shadow:4px 4px 0 #d9471f}
 body.poster .tile.sel span{color:#f2b33d;opacity:1}
 body.poster #skip{color:#f4e6c8;background:#e2622b;border-color:#e2622b;border-radius:24px;box-shadow:3px 3px 0 rgba(0,0,0,.45)}
-body.poster #recap,body.poster #settings{background:rgba(23,56,63,.9)}
+body.poster #recap,body.poster #settings,body.poster #page{background:rgba(23,56,63,.9)}
 body.poster #rainbow{display:block;height:28px;background:linear-gradient(#e2622b 0 25%,#f2b33d 25% 50%,#f4e6c8 50% 75%,#3aa7a3 75%)}
 body.poster .hdr{background:#102a30;border-bottom:0;box-shadow:none}
 body.poster .hdr h2{text-shadow:none;color:#f4e6c8;letter-spacing:1px}
@@ -233,6 +200,62 @@ body.poster #totals .big{color:#f2b33d;text-shadow:4px 4px 0 #d9471f;letter-spac
 body.poster #totals .og b{display:inline-block;width:1.35em;height:1.35em;line-height:1.35em;border-radius:50%;background:#f4e6c8;color:#d9471f;text-shadow:none;box-shadow:3px 3px 0 #e2622b}
 body.poster #totals .sm,body.poster .stats,body.poster .hist,body.poster .srow label{color:#f4e6c8}
 body.poster .hist{border-top-color:rgba(244,230,200,.4)}
+/* ---------- v1.0: start, HUD, bots, pages, solar results ---------- */
+#stockLine{font-size:13px;letter-spacing:1px}
+#storyBtn{font-size:28px;padding:10px 54px;letter-spacing:5px}
+#startRow0{display:flex;gap:10px}#startRow0 button{font-size:18px;padding:9px 24px}
+#startRow{flex-wrap:wrap;justify-content:center}
+#hud{position:absolute;left:8px;right:8px;top:3px;display:flex;justify-content:space-between;font-size:12px;letter-spacing:1px;pointer-events:none;z-index:2}
+.bot{position:absolute;width:46px;height:46px;padding:0;border-radius:50%;z-index:3;display:none;align-items:center;justify-content:center}
+.bot svg{width:26px;height:26px;pointer-events:none}
+.bot.own{display:flex}
+#bot_hot{left:6px;top:24px}#bot_chill{right:6px;top:24px}#bot_low{left:6px;bottom:6px}#bot_high{right:6px;bottom:6px}
+.bot.sel{box-shadow:0 0 0 3px var(--am),0 0 16px var(--am)}
+#brush{left:3px;top:50%;bottom:auto;transform:translateY(-50%);width:52px}
+#brushName{font-size:9px;letter-spacing:0;text-align:center;line-height:1}
+#brushBot{display:none;width:46px;height:46px;border-radius:50%;border:3px solid var(--am);align-items:center;justify-content:center;background:rgba(0,0,0,.35)}
+#brushBot svg{width:26px;height:26px}
+#brush.isbot #brushCan{display:none}#brush.isbot #brushBot{display:flex}
+#mixBtn{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:50px;height:50px;padding:0;font-size:12px;letter-spacing:0;border-radius:50%;display:none;z-index:3}
+#mixBtn.own{display:block}
+#mixBtn.on{color:var(--ink);background:#f2b33d;border-color:#f2b33d;box-shadow:0 0 16px rgba(255,176,0,.8)}
+#peekBtn{position:absolute;left:50%;transform:translateX(-50%);top:0;padding:2px 12px;font-size:11px;letter-spacing:1px;display:none;z-index:3}
+#peekBtn.own{display:block}
+#fog{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none}
+#planetWrap{transform-origin:50% 50%}
+#banner{position:absolute;left:12px;right:12px;top:26%;text-align:center;z-index:6;display:none;padding:14px 10px;border-radius:14px;background:#d9471f;color:#f4e6c8;box-shadow:5px 5px 0 rgba(0,0,0,.45)}
+#banner small{display:block;font-size:11px;letter-spacing:3px;opacity:.85}
+#banner b{display:block;font-size:22px;letter-spacing:1px;margin-top:4px}
+#banner span{display:block;font-size:12px;font-weight:700;opacity:.9}
+#debug{top:auto;bottom:2px}
+.tile.locked{opacity:.22;filter:grayscale(1)}
+#bubble.flashy{animation:blink .22s steps(2) 5}
+#solar{flex:none;width:100%;height:34vh;display:block;touch-action:manipulation}
+.pcard.hl{outline:3px solid var(--am);outline-offset:2px}
+.stamp{display:inline-block;transform:rotate(-5deg);border:3px solid currentColor;padding:1px 10px;border-radius:6px;font-size:22px;letter-spacing:2px;margin:6px 0}
+.stamp.pass{color:#5fd0b0}.stamp.fail{color:#ff6a4a}
+.pcard .it{flex:1;min-width:0}.it b{display:block;font-size:16px;letter-spacing:.5px}.it small{display:block;font-size:11px;opacity:.8;font-weight:700;font-family:ui-monospace,Menlo,monospace}
+.pcard button{flex:none;font-size:14px;padding:8px 12px}
+button:disabled{opacity:.35}
+.node{display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:4px;border-radius:10px;font-size:13px;border:1.5px solid rgba(244,230,200,.25)}
+.node.cur{background:#f2b33d;color:#17383f;border-color:#f2b33d}.node.done{opacity:.45}.node.boss{border-color:#ff6a4a}
+.node i{font-style:normal;margin-left:auto;font-size:11px;text-align:right}
+.gal{font-size:12px;letter-spacing:3px;margin:12px 0 4px;opacity:.85}
+.wal{display:flex;justify-content:space-around;font-size:12px;letter-spacing:1px;margin-bottom:10px;text-align:center}
+.wal b{font-size:24px;color:var(--am);display:block}
+.sech{font-size:13px;letter-spacing:3px;margin:18px 0 8px;color:var(--am)}
+.note{font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;line-height:1.5;opacity:.9;margin:6px 0}
+.big2{font-size:40px;color:var(--am);text-align:center;line-height:1.1}
+.devrow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center}
+.devrow button{font-size:12px;padding:7px 9px;letter-spacing:0}.devrow input{width:60px}
+body.poster .pcard button{color:#f4e6c8;background:#e2622b;border-color:#e2622b}
+body.poster .pcard .it small{color:#17383f}
+body.poster .bot,body.poster #mixBtn,body.poster #peekBtn{background:#102a30}
+body.poster .bot,body.poster #mixBtn{border-radius:50%}
+body.poster #mixBtn.on{color:#17383f;background:#f2b33d;box-shadow:3px 3px 0 #d9471f}
+body.poster .bot.sel{box-shadow:0 0 0 3px #f2b33d,3px 3px 0 3px #d9471f}
+body.poster #brushBot{border-color:#f2b33d;box-shadow:3px 3px 0 #d9471f}
+body.poster .big2{text-shadow:4px 4px 0 #d9471f}
 </style>
 </head>
 <body>
@@ -243,14 +266,13 @@ body.poster .hist{border-top-color:rgba(244,230,200,.4)}
   <canvas id="hero"></canvas>
   <div id="logo"><i><b>T</b>iny</i><i><b>P</b>lanets</i><i><b>B</b>uilt</i><i><b>Q</b>uick</i></div>
   <div id="tag">TPBQ CORP. // PLANETARY FABRICATION // "WORLDS WHILE YOU WAIT"</div>
-  <div class="lbl">TERRAINS PER ORDER</div>
-  <div id="tiers"></div>
-  <div id="tierDesc"></div>
-  <div id="optRow"><button id="shapeBtn" class="small"></button><button id="musicBtn" class="small"></button></div>
-  <button id="playBtn" class="pri">PLAY</button>
+  <div id="stockLine"></div>
+  <button id="storyBtn" class="pri">STORY</button>
+  <div id="startRow0"><button id="arcadeBtn">ARCADE</button><button id="hqBtn">HQ</button></div>
   <div id="startRow">
     <button id="gearBtn" class="small">&#9881; SETTINGS</button>
     <button id="muteBtn" class="small">SOUND ON</button>
+    <button id="musicBtn" class="small"></button>
   </div>
   <div id="version"></div>
 </div>
@@ -269,11 +291,17 @@ body.poster .hist{border-top-color:rgba(244,230,200,.4)}
     <div id="bubble"><div id="orderText"></div></div>
   </div>
   <div id="mid">
-    <div id="planetWrap"><canvas id="planet"></canvas></div>
-    <div id="brush"><span>BRUSH</span><canvas id="brushCan"></canvas><b id="brushName"></b></div>
+    <div id="hud"><span id="hudL"></span><span id="hudR"></span></div>
+    <div id="planetWrap"><canvas id="planet"></canvas><canvas id="fog"></canvas></div>
+    <div id="brush"><span>BRUSH</span><canvas id="brushCan"></canvas><div id="brushBot"></div><b id="brushName"></b></div>
+    <button class="bot" id="bot_hot"></button><button class="bot" id="bot_chill"></button>
+    <button class="bot" id="bot_low"></button><button class="bot" id="bot_high"></button>
+    <button id="mixBtn">MIX</button>
+    <button id="peekBtn">PEEK</button>
     <canvas id="fly"></canvas>
     <div id="flash"></div>
     <div id="cd"></div>
+    <div id="banner"></div>
     <div id="debug"></div>
   </div>
   <div id="bottom">
@@ -282,1471 +310,34 @@ body.poster .hist{border-top-color:rgba(244,230,200,.4)}
   </div>
 </div>
 
-<!-- RECAP -->
+<!-- RESULTS: solar system + review -->
 <div id="recap" class="screen">
   <div id="rainbow"></div>
-  <div class="hdr"><h2>QUARTERLY PLANET REVIEW</h2></div>
+  <div class="hdr"><h2 id="recapTitle">QUARTERLY PLANET REVIEW</h2></div>
+  <canvas id="solar"></canvas>
   <div class="body scroll" id="recapBody"></div>
+</div>
+
+<!-- generic page: run map, store, HQ, arcade options, run end -->
+<div id="page" class="screen">
+  <div class="hdr"><h2 id="pageTitle"></h2><button id="pageBack" class="small">MENU</button></div>
+  <div class="body scroll" id="pageBody"></div>
 </div>
 
 <!-- SETTINGS -->
 <div id="settings" class="screen">
   <div class="hdr"><h2>&#9881; SETTINGS</h2><button id="setClose" class="small">DONE</button></div>
   <div class="body scroll"><div id="setRows"></div>
-    <div class="rbtns"><button id="setReset" class="small">RESET TO DEFAULTS</button></div>
+    <div class="rbtns"><button id="setReset" class="small">RESET SETTINGS TO DEFAULTS</button></div>
+    <div id="devTools"></div>
   </div>
 </div>
 
 <canvas id="ghost"></canvas>
 
-<script>
-"use strict";
-var VERSION = "v0.7 build 2026-11-15 12:45 (poster)";
-
-/*LOGIC-START*/
-/* ================= PURE LOGIC (no DOM) — tested by logic.test.mjs ================= */
-// THE one tunable object. Live-editable in the settings panel.
-var CONFIG_DEFAULTS = {
-  roundSeconds: 90,
-  handSize: 4,
-  deckCounts: [5, 5, 5, 5, 5, 5],   // Forest, Desert, Sea, Lake, Plains, Hills
-  blankCount: 3,                    // eraser cards
-  cardAreaFraction: 0.48,           // card area / planet area (0.48 => about 5 cards per planet)
-  canvasDiameterPct: 70,            // planet diameter as % of screen width
-  cardAspect: 2,                    // h / w  (1:2 portrait)
-  fingerOffsetY: 80,
-  rotateDegPerSec: 270,
-  GRID: 75,                         // planet = GRID x GRID squares
-  minTargetPct: 6,
-  maxTargetPct: 73,
-  randomShapes: false,              // new planet shape with every customer
-  artStyle: "poster",               // poster | classic (the earlier neon art)
-  musicStyle: "chip",               // chip | lofi | orch | wave
-  finishCoveragePct: 99.5,          // planet auto-finishes at this % covered (slivers are forgiven)
-  discardEnabled: true,
-  brushRadiusPct: 22,               // paint mode: brush radius as % of planet radius
-  paintFinishPct: 99,              // paint mode: planet auto-finishes at this % covered
-  brushOffsetY: 5,                  // paint mode: px the spray lands above the finger
-  gradeMaxSum: [4, 10, 18, 28, 40], // S, A, B, C, D (inclusive); above = F
-  payPct: [125, 100, 75, 50, 25, 0],
-  bonusMC: [10, 5, 3, 1, 0, -5],
-  payRanges: [[3, 8], [7, 12], [9, 15]],      // 3, 4, 5 terrains
-  skipEnabled: true,
-  skipPenaltySec: 0,
-  debugLivePct: false,
-  countdown: true,
-  musicVolume: 60,                  // 0-100
-  sfxVolume: 80                     // 0-100
-};
-var TERRAINS = [
-  { id: 0, name: "BLANK",  color: [24, 27, 40] },
-  { id: 1, name: "FOREST", color: [34, 120, 52] },
-  { id: 2, name: "DESERT", color: [222, 184, 98] },
-  { id: 3, name: "SEA",    color: [24, 58, 150] },
-  { id: 4, name: "LAKE",   color: [120, 215, 235] },
-  { id: 5, name: "PLAINS", color: [196, 232, 160] },
-  { id: 6, name: "HILLS",  color: [176, 64, 44] }
-];
-var GRADES = ["S", "A", "B", "C", "D", "F"];
-var TIER_SHAPES = [[3, false], [4, false], [5, false]]; // [named terrains, hasANY] - ANY combos retired
-var ANY = -1;
-
-function roundHalfUp(x) { return Math.floor(x + 0.5); }
-// exact integer version of roundHalfUp(count/total*100)
-function pctOf(count, total) { return total > 0 ? Math.floor((200 * count + total) / (2 * total)) : 0; }
-
-function makeRng(seed) { // mulberry32
-  var a = seed >>> 0;
-  return function () {
-    a = (a + 0x6D2B79F5) >>> 0;
-    var t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-function randInt(rng, lo, hi) { return lo + Math.floor(rng() * (hi - lo + 1)); }
-function shuffle(arr, rng) {
-  for (var i = arr.length - 1; i > 0; i--) {
-    var j = Math.floor(rng() * (i + 1)); var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
-  }
-  return arr;
-}
-function buildDeck(cfg, rng) {
-  var d = [];
-  for (var t = 0; t < 6; t++) for (var k = 0; k < (cfg.deckCounts[t] | 0); k++) d.push(t + 1);
-  for (var b = 0; b < (cfg.blankCount | 0); b++) d.push(0);
-  return shuffle(d, rng);
-}
-function cardDims(R, cfg) { // R in any unit -> {w,h} in the same unit
-  var A = Math.PI * R * R * cfg.cardAreaFraction;
-  var w = Math.sqrt(A / cfg.cardAspect);
-  return { w: w, h: w * cfg.cardAspect };
-}
-
-function splitPcts(n, min, max, rng) { // n integers summing to 100, each within [min, max]
-  min = Math.max(0, Math.min(min | 0, Math.floor(100 / n)));
-  max = Math.min(100, Math.max(max === undefined ? 100 : max | 0, Math.ceil(100 / n)));
-  var rem = 100 - n * min, i, tries, p, prev, ok, cuts;
-  for (tries = 0; tries < 200; tries++) {
-    cuts = []; for (i = 0; i < n - 1; i++) cuts.push(randInt(rng, 0, rem));
-    cuts.sort(function (a, b) { return a - b; });
-    p = []; prev = 0;
-    for (i = 0; i < n - 1; i++) { p.push(min + cuts[i] - prev); prev = cuts[i]; }
-    p.push(min + rem - prev);
-    ok = true; for (i = 0; i < n; i++) if (p[i] > max) ok = false;
-    if (ok) return p;
-  }
-  p = []; for (i = 0; i < n; i++) p.push(min);
-  while (rem > 0) { i = randInt(rng, 0, n - 1); if (p[i] < max) { p[i]++; rem--; } }
-  return p;
-}
-/* ----- random customer and planet names ----- */
-var ALIEN_TITLES = ["Mr.", "Mrs.", "Ms.", "Dr.", "Lady", "Lord", "Captain", "Madame", "Sir", "Chief", "Professor", "Baron", "Auntie", "Admiral", "Dame", "Uncle"];
-var ALIEN_NAMES = ["Blorbo", "Zib", "Snorvek", "Glorp", "Vex", "Quazzle", "Mubb", "Xanthor", "Plim", "Zorgle", "Wubwub", "Skreel", "Thrax", "Oomla", "Fizzbin", "Krellick", "Bloop", "Yonk", "Drazzle", "Splern", "Gnarf", "Zizzix", "Hork", "Pleeb", "Morbo", "Squee", "Blixt", "Urgo"];
-var PLANET_A = ["Glorb", "Squonk", "Blip", "Wobbl", "Zant", "Kreb", "Floob", "Mox", "Thwip", "Yibb", "Quorn", "Zeeb", "Plonk", "Vorp", "Snarf", "Dingl", "Bort", "Klaxx", "Noob", "Frell", "Gump", "Skrob", "Womp", "Zuul"];
-var PLANET_B = ["ax", "ulon", "aria", "ix", "os", "opolis", "onia", "ara", "ium", "oid", "", "", "us", "eth"];
-var PLANET_C = [" Prime", " IV", " VII", " IX", "-7", "-12", " Minor", " Major", " B", " II", "", "", "", " XL", " Jr."];
-function alienName(rng) { return ALIEN_TITLES[randInt(rng, 0, ALIEN_TITLES.length - 1)] + " " + ALIEN_NAMES[randInt(rng, 0, ALIEN_NAMES.length - 1)]; }
-function planetName(rng) {
-  var n = PLANET_A[randInt(rng, 0, PLANET_A.length - 1)] + PLANET_B[randInt(rng, 0, PLANET_B.length - 1)];
-  return rng() < 0.15 ? "New " + n : n + PLANET_C[randInt(rng, 0, PLANET_C.length - 1)];
-}
-function generateOrder(tier, cfg, rng) {
-  var shape = TIER_SHAPES[tier - 1], nNamed = shape[0], hasAny = shape[1];
-  var ids = shuffle([1, 2, 3, 4, 5, 6], rng).slice(0, nNamed);
-  var n = nNamed + (hasAny ? 1 : 0), pcts = splitPcts(n, cfg.minTargetPct, cfg.maxTargetPct, rng), i;
-  var slots = [], big = ids[0], bigPct = -1;
-  for (i = 0; i < nNamed; i++) {
-    slots.push({ terrain: ids[i], pct: pcts[i] });
-    if (pcts[i] > bigPct) { bigPct = pcts[i]; big = ids[i]; }
-  }
-  if (hasAny) slots.push({ terrain: ANY, pct: pcts[n - 1] });
-  var pr = cfg.payRanges[tier - 1];
-  var o = {
-    tier: tier, slots: slots, basePay: randInt(rng, pr[0], pr[1]), tint: big,
-    look: { head: randInt(rng, 0, 2), eyes: randInt(rng, 1, 3), antenna: randInt(rng, 0, 2) },
-    shape: cfg.randomShapes ? SHAPE_NAMES[randInt(rng, 0, SHAPE_NAMES.length - 1)] : "circle"
-  };
-  o.name = alienName(rng); o.planet = planetName(rng); // the customer, and what they will call their planet
-  return o;
-}
-
-/* ----- planet shapes: inside(u, v) with u right, v down, both in [-1, 1] ----- */
-function inPoly(p, u, v) {
-  var c = false;
-  for (var i = 0, j = p.length - 1; i < p.length; j = i++)
-    if ((p[i][1] > v) !== (p[j][1] > v) && u < (p[j][0] - p[i][0]) * (v - p[i][1]) / (p[j][1] - p[i][1]) + p[i][0]) c = !c;
-  return c;
-}
-function ngon(n, r, rot, cy, r2) { // regular polygon, or a star when r2 (inner radius) is given
-  var p = [], k = r2 ? n * 2 : n;
-  for (var i = 0; i < k; i++) { var a = rot + i * 2 * Math.PI / k, rr = r2 && i % 2 ? r2 : r; p.push([Math.cos(a) * rr, Math.sin(a) * rr + (cy || 0)]); }
-  return p;
-}
-function disc(u, v, cx, cy, r) { return (u - cx) * (u - cx) + (v - cy) * (v - cy) <= r * r; }
-function heartFn(x, y) { var a = x * x + y * y - 1; return a * a * a - x * x * y * y * y <= 0; }
-var UP = -Math.PI / 2;
-var POLY = {
-  kite: [[0, -1], [0.72, -0.3], [0, 1], [-0.72, -0.3]],
-  pentagon: ngon(5, 1, UP, 0.1), hexagon: ngon(6, 1, 0, 0), octagon: ngon(8, 1.04, Math.PI / 8, 0),
-  star: ngon(5, 1.05, UP, 0.08, 0.44), triangle: [[0, -1], [0.82, 0.97], [-0.82, 0.97]]
-};
-var SHAPES = {
-  circle: function (u, v) { return u * u + v * v <= 1; },
-  square: function (u, v) { return true; },
-  rectangle: function (u, v) { return Math.abs(v) <= 0.6; },
-  diamond: function (u, v) { return Math.abs(u) + Math.abs(v) <= 1; },
-  oval: function (u, v) { return u * u + (v / 0.64) * (v / 0.64) <= 1; },
-  kite: function (u, v) { return inPoly(POLY.kite, u, v); },
-  pentagon: function (u, v) { return inPoly(POLY.pentagon, u, v); },
-  hexagon: function (u, v) { return inPoly(POLY.hexagon, u, v); },
-  octagon: function (u, v) { return inPoly(POLY.octagon, u, v); },
-  heart: function (u, v) { return heartFn(u * 1.2, -v * 1.2 + 0.12); },
-  club: function (u, v) {
-    return disc(u, v, 0, -0.5, 0.44) || disc(u, v, -0.48, 0.12, 0.44) || disc(u, v, 0.48, 0.12, 0.44) || disc(u, v, 0, -0.08, 0.3) ||
-      (v >= 0.1 && v <= 0.96 && Math.abs(u) <= 0.1 + 0.3 * Math.pow((v - 0.1) / 0.86, 2));
-  },
-  spade: function (u, v) {
-    return heartFn(u * 1.2, (v + 1) * 1.5 - 1) || (v >= 0.3 && v <= 0.96 && Math.abs(u) <= 0.1 + 0.3 * Math.pow((v - 0.3) / 0.66, 2));
-  },
-  star: function (u, v) { return inPoly(POLY.star, u, v); },
-  crescent: function (u, v) { return u * u + v * v <= 1 && !disc(u, v, 0.48, 0, 0.84); },
-  cross: function (u, v) { return Math.abs(u) <= 0.36 || Math.abs(v) <= 0.36; },
-  triangle: function (u, v) { return inPoly(POLY.triangle, u, v); },
-  teardrop: function (u, v) { return disc(u, v, 0, 0.36, 0.64) || (v > -1 && v <= 0.36 && Math.abs(u) <= 0.64 * Math.pow((v + 1) / 1.36, 0.8)); },
-  cloud: function (u, v) {
-    return v <= 0.62 && (disc(u, v, -0.52, 0.2, 0.44) || disc(u, v, -0.08, -0.12, 0.56) || disc(u, v, 0.5, 0.14, 0.48) || (Math.abs(u) <= 0.62 && v >= 0.1));
-  },
-  semicircle: function (u, v) { return v <= 0.5 && u * u + (v - 0.5) * (v - 0.5) <= 1; }
-};
-var SHAPE_NAMES = Object.keys(SHAPES);
-
-function makeGrid(G, shape) {
-  var fn = SHAPES[shape] || SHAPES.circle, inside = new Uint8Array(G * G), total = 0, c = G / 2;
-  for (var y = 0; y < G; y++) for (var x = 0; x < G; x++)
-    if (fn((x + 0.5 - c) / c, (y + 0.5 - c) / c)) { inside[y * G + x] = 1; total++; }
-  return { G: G, shape: SHAPES[shape] ? shape : "circle", cells: new Uint8Array(G * G), inside: inside, total: total };
-}
-function clearGrid(grid) { grid.cells.fill(0); }
-// Stamp a rotated rectangle (center cx,cy; size w,h; angle rad clockwise on screen), all in grid units.
-// Point-in-rect test per pixel center. Returns number of inside-circle pixels covered (0 = no overlap).
-function stampGrid(grid, cx, cy, w, h, angle, id) {
-  var G = grid.G, cos = Math.cos(angle), sin = Math.sin(angle), hw = w / 2, hh = h / 2;
-  var rad = Math.sqrt(hw * hw + hh * hh);
-  var x0 = Math.max(0, Math.floor(cx - rad)), x1 = Math.min(G - 1, Math.ceil(cx + rad));
-  var y0 = Math.max(0, Math.floor(cy - rad)), y1 = Math.min(G - 1, Math.ceil(cy + rad));
-  var hits = [];
-  for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) {
-    var i = y * G + x;
-    if (!grid.inside[i]) continue;
-    var dx = x + 0.5 - cx, dy = y + 0.5 - cy;
-    var lx = dx * cos + dy * sin, ly = -dx * sin + dy * cos;
-    if (lx >= -hw && lx <= hw && ly >= -hh && ly <= hh) hits.push(i);
-  }
-  for (var k = 0; k < hits.length; k++) grid.cells[hits[k]] = id;
-  return hits.length;
-}
-function countGrid(grid) {
-  var c = [0, 0, 0, 0, 0, 0, 0];
-  for (var i = 0; i < grid.cells.length; i++) if (grid.inside[i]) c[grid.cells[i]]++;
-  return c;
-}
-function isFinished(grid, pct) {
-  if (!(grid.total > 0)) return false;
-  var allowed = Math.floor(grid.total * (100 - (pct === undefined ? 100 : pct)) / 100);
-  return countGrid(grid)[0] <= Math.max(0, allowed);
-}
-// leftover unpainted slivers on a finished planet take the colour of their neighbours (picture only; scoring ignores them)
-function fillBlanks(cells, grid) {
-  var G = grid.G, changed = true, guard = 0;
-  while (changed && guard++ < 64) {
-    changed = false; var prev = new Uint8Array(cells);
-    for (var i = 0; i < cells.length; i++) {
-      if (!grid.inside[i] || prev[i] !== 0) continue;
-      var x = i % G, v = (x > 0 && prev[i - 1]) || (x < G - 1 && prev[i + 1]) || (i >= G && prev[i - G]) || (i + G < cells.length && prev[i + G]) || 0;
-      if (v) { cells[i] = v; changed = true; }
-    }
-  }
-  return cells;
-}
-
-function gradeIndexForSum(S, cfg) {
-  for (var i = 0; i < 5; i++) if (S <= cfg.gradeMaxSum[i]) return i;
-  return 5;
-}
-function payFor(base, gi, cfg) { return Math.ceil(base * cfg.payPct[gi] / 100 - 1e-9); }
-function scorePlanet(order, counts, total, cfg) {
-  var rows = [], S = 0, namedCount = 0;
-  total = total - counts[0]; // percentages are of the painted area
-  order.slots.forEach(function (s) {
-    if (s.terrain === ANY) return;
-    var actual = pctOf(counts[s.terrain], total), err = Math.abs(actual - s.pct);
-    namedCount += counts[s.terrain]; S += err;
-    rows.push({ terrain: s.terrain, target: s.pct, actual: actual, err: err });
-  });
-  order.slots.forEach(function (s) {
-    if (s.terrain !== ANY) return;
-    var unnamed = pctOf(total - namedCount, total), err = Math.abs(unnamed - s.pct);
-    S += err;
-    rows.push({ terrain: ANY, target: s.pct, actual: unnamed, err: err });
-  });
-  var gi = gradeIndexForSum(S, cfg);
-  return { rows: rows, S: S, gi: gi, grade: GRADES[gi], basePay: order.basePay, paid: payFor(order.basePay, gi, cfg) };
-}
-function overallGrade(gis, cfg) {
-  if (!gis.length) return null;
-  var sum = 0; gis.forEach(function (g) { sum += 5 - g; });
-  var gi = 5 - roundHalfUp(sum / gis.length);
-  return { gi: gi, grade: GRADES[gi], bonus: cfg.bonusMC[gi] };
-}
-
-/* ----- round state machine (pure) ----- */
-function drawUp(r) {
-  for (var i = 0; i < r.hand.length; i++) if (r.hand[i] === null && r.pile.length) r.hand[i] = r.pile.pop();
-}
-function createRound(cfg, tier, rng) {
-  var deck = buildDeck(cfg, rng), hand = [];
-  for (var i = 0; i < Math.max(1, cfg.handSize | 0); i++) hand.push(null);
-  var r = {
-    cfg: cfg, tier: tier, rng: rng, pile: deck, hand: hand, deckSize: deck.length, cardsPlayed: 0,
-    timeLeft: cfg.roundSeconds, elapsed: 0, planetStart: 0, over: false, endReason: null,
-    grid: makeGrid(cfg.GRID | 0), queue: [generateOrder(tier, cfg, rng), generateOrder(tier, cfg, rng)],
-    results: [], skipped: 0, discarded: 0
-  };
-  drawUp(r);
-  if (r.deckSize === 0) { r.over = true; r.endReason = "cards"; }
-  return r;
-}
-function advanceOrder(r) {
-  r.queue.shift(); r.queue.push(generateOrder(r.tier, r.cfg, r.rng));
-  clearGrid(r.grid); r.planetStart = r.elapsed;
-  if (r.blank !== undefined) { r.grid = makeGrid(r.grid.G, r.queue[0].shape); r.blank = r.grid.total; } // paint mode: next customer, next shape
-}
-function roundTick(r, dt) {
-  if (r.over) return;
-  r.timeLeft -= dt; r.elapsed += dt;
-  if (r.timeLeft <= 0) { r.elapsed += r.timeLeft; r.timeLeft = 0; r.over = true; r.endReason = "time"; }
-}
-// Play hand[slot] as a stamp. Coordinates in grid units.
-function roundPlay(r, slot, cx, cy, w, h, angle) {
-  if (r.over) return { ok: false, reason: "over" };
-  var id = r.hand[slot];
-  if (id === null || id === undefined) return { ok: false, reason: "empty" };
-  var n = stampGrid(r.grid, cx, cy, w, h, angle, id);
-  if (n === 0) return { ok: false, reason: "no overlap" };
-  r.hand[slot] = null; r.cardsPlayed++; drawUp(r);
-  var finished = null;
-  if (isFinished(r.grid, r.cfg.finishCoveragePct)) {
-    finished = scorePlanet(r.queue[0], countGrid(r.grid), r.grid.total, r.cfg);
-    finished.order = r.queue[0];
-    finished.cells = fillBlanks(new Uint8Array(r.grid.cells), r.grid);
-    finished.seconds = r.elapsed - r.planetStart;
-    r.results.push(finished);
-    advanceOrder(r);
-  }
-  checkCardsOut(r);
-  return { ok: true, card: id, finished: finished, ended: r.over };
-}
-function checkCardsOut(r) {
-  if (!r.over && !r.pile.length && r.hand.every(function (c) { return c === null; })) { r.over = true; r.endReason = "cards"; }
-}
-// Toss hand[slot] away for a fresh draw. The tossed card is gone for the round.
-function roundDiscard(r, slot) {
-  if (r.over || !r.cfg.discardEnabled) return false;
-  if (r.hand[slot] === null || r.hand[slot] === undefined) return false;
-  r.hand[slot] = null; r.discarded++; drawUp(r); checkCardsOut(r);
-  return true;
-}
-function roundSkip(r) {
-  if (r.over || !r.cfg.skipEnabled) return false;
-  r.skipped++; advanceOrder(r);
-  if (r.cfg.skipPenaltySec > 0) roundTick(r, r.cfg.skipPenaltySec);
-  return true;
-}
-function summarizeRound(r) {
-  var pay = 0, secs = 0, gis = [];
-  r.results.forEach(function (p) { pay += p.paid; secs += p.seconds; gis.push(p.gi); });
-  var og = overallGrade(gis, r.cfg), bonus = og ? og.bonus : 0;
-  return {
-    tier: r.tier, planets: r.results.length, payments: pay, overall: og ? og.grade : "-", bonus: bonus,
-    total: pay + bonus, cardsUsed: r.cardsPlayed, deckSize: r.deckSize, secondsLeft: r.timeLeft,
-    avgSeconds: r.results.length ? secs / r.results.length : 0, skipped: r.skipped, discarded: r.discarded, endReason: r.endReason
-  };
-}
-/* ----- paint mode (pure): no cards, the round ends on the clock only ----- */
-function createPaintRound(cfg, tier, rng) {
-  var q = [generateOrder(tier, cfg, rng), generateOrder(tier, cfg, rng)], g = makeGrid(cfg.GRID | 0, q[0].shape);
-  return {
-    cfg: cfg, tier: tier, rng: rng, pile: [], hand: [], deckSize: 0, cardsPlayed: 0, discarded: 0,
-    timeLeft: cfg.roundSeconds, elapsed: 0, planetStart: 0, over: false, endReason: null,
-    grid: g, blank: g.total, queue: q, results: [], skipped: 0
-  };
-}
-// One dab of the brush at (cx,cy), radius rad, all in grid units. Every square the brush touches at all is filled whole.
-// Returns the indices of the squares that changed.
-function paintSpray(r, cx, cy, rad, id) {
-  var changed = [];
-  if (r.over || !(rad > 0)) return changed;
-  var g = r.grid, G = g.G, cells = g.cells, r2 = rad * rad;
-  var x0 = Math.max(0, Math.floor(cx - rad)), x1 = Math.min(G - 1, Math.floor(cx + rad));
-  var y0 = Math.max(0, Math.floor(cy - rad)), y1 = Math.min(G - 1, Math.floor(cy + rad));
-  for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) {
-    var i = y * G + x;
-    if (!g.inside[i] || cells[i] === id) continue;
-    var nx = cx < x ? x : cx > x + 1 ? x + 1 : cx, ny = cy < y ? y : cy > y + 1 ? y + 1 : cy; // nearest point of the square to the brush centre
-    if ((nx - cx) * (nx - cx) + (ny - cy) * (ny - cy) > r2) continue;
-    if (cells[i] === 0) r.blank--; else if (id === 0) r.blank++;
-    cells[i] = id; changed.push(i);
-  }
-  return changed;
-}
-function paintFinishIfDone(r) {
-  if (r.over) return null;
-  var allowed = Math.floor(r.grid.total * (100 - r.cfg.paintFinishPct) / 100);
-  if (r.blank > Math.max(0, allowed)) return null;
-  var f = scorePlanet(r.queue[0], countGrid(r.grid), r.grid.total, r.cfg);
-  f.order = r.queue[0]; f.cells = fillBlanks(new Uint8Array(r.grid.cells), r.grid); f.seconds = r.elapsed - r.planetStart;
-  f.grid = r.grid; r.results.push(f); advanceOrder(r);
-  return f;
-}
-var TPBQ = {
-  SHAPES: SHAPES, SHAPE_NAMES: SHAPE_NAMES, splitPcts: splitPcts,
-  createPaintRound: createPaintRound, paintSpray: paintSpray, paintFinishIfDone: paintFinishIfDone,
-  CONFIG_DEFAULTS: CONFIG_DEFAULTS, TERRAINS: TERRAINS, GRADES: GRADES, TIER_SHAPES: TIER_SHAPES, ANY: ANY,
-  roundHalfUp: roundHalfUp, pctOf: pctOf, makeRng: makeRng, buildDeck: buildDeck, cardDims: cardDims,
-  alienName: alienName, planetName: planetName,
-  generateOrder: generateOrder, makeGrid: makeGrid, stampGrid: stampGrid, countGrid: countGrid, isFinished: isFinished, fillBlanks: fillBlanks,
-  gradeIndexForSum: gradeIndexForSum, payFor: payFor, scorePlanet: scorePlanet, overallGrade: overallGrade,
-  createRound: createRound, roundTick: roundTick, roundPlay: roundPlay, roundSkip: roundSkip, roundDiscard: roundDiscard, summarizeRound: summarizeRound
-};
-/*LOGIC-END*/
-
-/* ================= CONFIG persistence ================= */
-function clone(o) { return JSON.parse(JSON.stringify(o)); }
-function sameShape(a, b) {
-  if (Array.isArray(a)) return Array.isArray(b) && a.length === b.length && a.every(function (x, i) { return sameShape(x, b[i]); });
-  return typeof a === typeof b && (typeof b !== "number" || isFinite(b));
-}
-function loadJSON(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
-function saveJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
-var CONFIG = clone(CONFIG_DEFAULTS);
-(function () {
-  var s = loadJSON("tpbq_cfg_main2");
-  if (s && typeof s === "object") Object.keys(CONFIG_DEFAULTS).forEach(function (k) {
-    if (k in s && sameShape(CONFIG_DEFAULTS[k], s[k])) CONFIG[k] = s[k];
-  });
-})();
-function sanitizeConfig() {
-  CONFIG.GRID = Math.max(8, Math.min(200, CONFIG.GRID | 0));
-  if (["chip", "lofi", "orch", "wave"].indexOf(CONFIG.musicStyle) < 0) CONFIG.musicStyle = "lofi";
-  if (CONFIG.artStyle !== "classic") CONFIG.artStyle = "poster";
-  CONFIG.brushRadiusPct = Math.max(1, Math.min(200, CONFIG.brushRadiusPct));
-  CONFIG.handSize = Math.max(1, Math.min(6, CONFIG.handSize | 0));
-  CONFIG.roundSeconds = Math.max(1, CONFIG.roundSeconds);
-  CONFIG.cardAspect = Math.max(0.2, CONFIG.cardAspect);
-  CONFIG.cardAreaFraction = Math.max(0.01, Math.min(1, CONFIG.cardAreaFraction));
-  CONFIG.canvasDiameterPct = Math.max(20, Math.min(100, CONFIG.canvasDiameterPct));
-}
-sanitizeConfig();
-
-/* ================= AUDIO: synthesized music (4 styles) + sfx (Web Audio, no files) ================= */
-var AudioSys = (function () {
-  var ctx = null, master, musicGain, sfxGain, leadBus, noiseBuf, waves = {};
-  var muted = !!loadJSON("tpbq_mute"), song = null, songName = null, step = 0, nextTime = 0, tempoMul = 1;
-  var SEMI = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
-  function midi(n) { var m = /^([A-G])(#?)(\d)$/.exec(n); return 12 * (+m[3] + 1) + SEMI[m[1]] + (m[2] ? 1 : 0); }
-  function hz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
-  function track(str) {
-    var map = {}, s = 0;
-    str.trim().split(/\s+/).forEach(function (tok) {
-      var p = tok.split(":"), len = +p[1];
-      if (p[0] !== "-") map[s] = { m: midi(p[0]), l: len };
-      s += len;
-    });
-    return { map: map, len: s };
-  }
-  function mk(bpm, lead, bass, drums, leadWave) {
-    return { bpm: bpm, lead: track(lead), bass: track(bass), drums: drums.replace(/\s/g, ""), leadWave: leadWave };
-  }
-  var SONGS = {
-    // "OmniGlorp hold music": bouncy corporate lobby jingle
-    title: mk(112,
-      "E5:2 G5:2 C6:2 G5:2 E5:2 G5:2 A5:4  A5:2 C6:2 E6:2 C6:2 A5:2 C6:2 B5:4 " +
-      "D5:2 F5:2 A5:2 F5:2 D6:3 C6:1 A5:4  B5:2 G5:2 F5:2 D5:2 G5:2 -:2 G5:1 A5:1 B5:2",
-      "C3:3 C3:1 G2:2 C3:2 E3:2 G3:2 C3:4  A2:3 A2:1 E2:2 A2:2 C3:2 E3:2 A2:4 " +
-      "D3:3 D3:1 A2:2 D3:2 F3:2 A3:2 D3:4  G2:3 G2:1 D3:2 G2:2 B2:2 D3:2 G2:2 B2:2",
-      "k-h-s-h-k-h-s-hh k-h-s-h-k-h-s-hh k-h-s-h-k-h-s-hh k-h-s-hkk-hss-ss", "p25"),
-    // "Rush order": frantic arpeggio panic
-    game: mk(156,
-      "A4:1 C5:1 E5:1 A5:1 E5:1 C5:1 A4:1 C5:1 E5:2 A5:2 G5:2 E5:2 " +
-      "F4:1 A4:1 C5:1 F5:1 C5:1 A4:1 F4:1 A4:1 C5:2 F5:2 E5:2 C5:2 " +
-      "G4:1 B4:1 D5:1 G5:1 D5:1 B4:1 G4:1 B4:1 D5:2 G5:2 A5:2 B5:2 " +
-      "E5:2 G#5:2 B5:2 E6:2 D6:1 C6:1 B5:1 A5:1 G#5:2 E5:2",
-      "A2:2 A3:2 A2:2 A3:2 A2:2 A3:2 A2:2 A3:2 F2:2 F3:2 F2:2 F3:2 F2:2 F3:2 F2:2 F3:2 " +
-      "G2:2 G3:2 G2:2 G3:2 G2:2 G3:2 G2:2 G3:2 E2:2 E3:2 E2:2 E3:2 E2:2 E3:2 E3:1 E3:1 E3:1 E3:1",
-      "k-hhs-hhk-khs-hh k-hhs-hhk-khs-hh k-hhs-hhk-khs-hh k-hhs-hhkkhsssss", "p12"),
-    // "Performance review": smug and chill
-    recap: mk(96,
-      "A5:4 C6:4 F5:6 -:2  G5:4 A#5:4 D5:6 -:2  A5:4 C6:2 D6:2 C6:4 A5:4  G5:6 F5:2 F5:8",
-      "F2:4 C3:4 F3:4 C3:4  A#2:4 F3:4 A#3:4 F3:4  F2:4 C3:4 F3:4 C3:4  C3:4 G3:4 F2:8",
-      "k---h---s---h--- k---h---s---h--- k---h---s---h--- k---h---s-h-h-hh", "p50")
-  };
-  function pulseWave(d) {
-    var n = 32, re = new Float32Array(n), im = new Float32Array(n);
-    for (var k = 1; k < n; k++) re[k] = 2 / (k * Math.PI) * Math.sin(k * Math.PI * d);
-    return ctx.createPeriodicWave(re, im);
-  }
-  function applyVolumes() {
-    if (!ctx) return;
-    master.gain.value = muted ? 0 : 0.9;
-    musicGain.gain.value = Math.max(0, Math.min(100, CONFIG.musicVolume)) / 100;
-    sfxGain.gain.value = Math.max(0, Math.min(100, CONFIG.sfxVolume)) / 100;
-  }
-  function init() {
-    if (ctx) { if (ctx.state !== "running") ctx.resume(); return; }
-    var AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    try {
-      ctx = new AC();
-      master = ctx.createGain();
-      var comp = ctx.createDynamicsCompressor(); comp.threshold.value = -10; comp.ratio.value = 8; comp.attack.value = 0.004; comp.release.value = 0.2; // safety limiter
-      master.connect(comp); comp.connect(ctx.destination);
-      ana = ctx.createAnalyser(); ana.fftSize = 2048; anaBuf = new Float32Array(2048); comp.connect(ana);
-      musicGain = ctx.createGain(); musicGain.connect(master);
-      sfxGain = ctx.createGain(); sfxGain.connect(master);
-      leadBus = ctx.createGain(); leadBus.connect(musicGain);
-      var echo = ctx.createDelay(0.5), fb = ctx.createGain(), wet = ctx.createGain(); // spacey echo on the lead
-      echo.delayTime.value = 0.19; fb.gain.value = 0.3; wet.gain.value = 0.35;
-      leadBus.connect(echo); echo.connect(fb); fb.connect(echo); echo.connect(wet); wet.connect(musicGain);
-      noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
-      var d = noiseBuf.getChannelData(0); for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-      waves.p12 = pulseWave(0.125); waves.p25 = pulseWave(0.25); waves.p50 = pulseWave(0.5);
-      initStyles();
-      applyVolumes();
-      setInterval(schedule, 25);
-      document.addEventListener("visibilitychange", function () {
-        if (document.hidden) ctx.suspend(); else { ctx.resume(); nextTime = 0; }
-      });
-      ctx.resume();
-    } catch (e) { ctx = null; }
-  }
-  function tone(dest, type, f0, f1, t, dur, vol) {
-    var o = ctx.createOscillator(), g = ctx.createGain();
-    if (waves[type]) o.setPeriodicWave(waves[type]); else o.type = type;
-    o.frequency.setValueAtTime(f0, t);
-    if (f1 && f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
-    g.gain.setValueAtTime(vol, t); g.gain.setValueAtTime(vol, t + dur * 0.7); g.gain.linearRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(dest); o.start(t); o.stop(t + dur + 0.03);
-  }
-  function noise(dest, t, dur, vol, type, freq, freqEnd) {
-    var s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
-    s.buffer = noiseBuf; s.loop = true; f.type = type; f.frequency.setValueAtTime(freq, t);
-    if (freqEnd) f.frequency.exponentialRampToValueAtTime(freqEnd, t + dur);
-    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    s.connect(f); f.connect(g); g.connect(dest); s.start(t); s.stop(t + dur + 0.03);
-  }
-  /* ----- modern music styles: lo-fi, orchestral sci-fi, synthwave. Layered voices, filters, reverb, swing. ----- */
-  var rvIn, vib, wow, padBus, lofiBus, ana, anaBuf, songLite = false, baseMul = 1;
-  function initStyles() {
-    var len = Math.floor(ctx.sampleRate * 2.4), ir = ctx.createBuffer(2, len, ctx.sampleRate), c, i, d;
-    for (c = 0; c < 2; c++) { d = ir.getChannelData(c); for (i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6); }
-    var conv = ctx.createConvolver(), rvOut = ctx.createGain(); conv.buffer = ir; rvIn = ctx.createGain(); rvOut.gain.value = 0.5;
-    rvIn.connect(conv); conv.connect(rvOut); rvOut.connect(musicGain);
-    vib = ctx.createGain(); vib.gain.value = 7; var l1 = ctx.createOscillator(); l1.frequency.value = 5.2; l1.connect(vib); l1.start();
-    wow = ctx.createGain(); wow.gain.value = 9; var l2 = ctx.createOscillator(); l2.frequency.value = 0.45; l2.connect(wow); l2.start();
-    padBus = ctx.createGain(); padBus.connect(musicGain);
-    lofiBus = ctx.createBiquadFilter(); lofiBus.type = "lowpass"; lofiBus.frequency.value = 2600; lofiBus.connect(musicGain);
-  }
-  function chord(str) { // "D3+F3+A3:8 -:8" -> step map of chords
-    var map = {}, s = 0;
-    str.trim().split(/\s+/).forEach(function (tok) { var p = tok.split(":"), len = +p[1]; if (p[0] !== "-") map[s] = { ms: p[0].split("+").map(midi), l: len }; s += len; });
-    return { map: map, len: s };
-  }
-  function synth(o) { // one layered, filtered, enveloped voice
-    var g = ctx.createGain(), end = o.t + o.dur + (o.r || 0.06), a = Math.min(o.a || 0.006, o.dur * 0.5), flt = null;
-    g.gain.setValueAtTime(0.0001, o.t); g.gain.linearRampToValueAtTime(o.vol, o.t + a);
-    if (o.decay) g.gain.exponentialRampToValueAtTime(Math.max(0.0002, o.vol * o.decay), o.t + o.dur); else g.gain.setValueAtTime(o.vol, o.t + o.dur);
-    g.gain.linearRampToValueAtTime(0.0001, end);
-    if (o.cut) {
-      flt = ctx.createBiquadFilter(); flt.type = "lowpass"; flt.Q.value = o.q || 0.7; flt.frequency.setValueAtTime(o.cut, o.t);
-      if (o.cutEnd) flt.frequency.exponentialRampToValueAtTime(o.cutEnd, o.t + Math.max(0.02, o.dur * (o.cutT || 1)));
-      flt.connect(g);
-    }
-    o.osc.forEach(function (d) { // [wave, detune cents, level, frequency multiple]
-      var os = ctx.createOscillator(), og = ctx.createGain(); os.type = d[0]; os.frequency.value = o.f * (d[3] || 1); os.detune.value = d[1] || 0; og.gain.value = d[2];
-      if (o.lfo) o.lfo.connect(os.detune);
-      os.connect(og); og.connect(flt || g); os.start(o.t); os.stop(end + 0.03);
-    });
-    g.connect(o.dest);
-    if (o.send) { var sg = ctx.createGain(); sg.gain.value = o.send; g.connect(sg); sg.connect(rvIn); }
-  }
-  var INST = {
-    ep: function (t, f, d) { synth({ t: t, f: f, dur: d, vol: 0.075, decay: 0.25, r: 0.25, cut: 1900, cutEnd: 700, osc: [["triangle", 0, 1], ["sine", 4, 0.7], ["sine", 0, 0.25, 2]], lfo: wow, dest: lofiBus, send: 0.25 }); },
-    sub: function (t, f, d) { synth({ t: t, f: f, dur: d, vol: 0.2, decay: 0.6, r: 0.08, osc: [["sine", 0, 1], ["triangle", 0, 0.5]], dest: lofiBus }); },
-    keys: function (t, f, d) { synth({ t: t, f: f, dur: d, vol: 0.075, a: 0.02, decay: 0.5, r: 0.2, cut: 1700, osc: [["triangle", 0, 1], ["sine", 0, 0.4, 2]], lfo: wow, dest: lofiBus, send: 0.35 }); },
-    str: function (t, f, d) { synth({ t: t, f: f, dur: d, vol: 0.026, a: Math.min(0.5, d * 0.4), r: 0.6, cut: 1500, osc: [["sawtooth", -9, 1], ["sawtooth", 8, 1], ["sawtooth", 0, 0.6, 0.5]], dest: musicGain, send: 0.6 }); },
-    stac: function (t, f, d) { synth({ t: t, f: f, dur: d, vol: 0.05, a: 0.01, decay: 0.3, r: 0.08, cut: 2600, cutEnd: 900, osc: [["sawtooth", -6, 1], ["sawtooth", 6, 1]], dest: musicGain, send: 0.35 }); },
-    horn: function (t, f, d) { synth({ t: t, f: f, dur: d, vol: 0.07, a: 0.07, r: 0.25, cut: 500, cutEnd: 1700, cutT: 0.3, osc: [["sawtooth", 0, 1], ["square", 0, 0.35], ["sawtooth", 5, 0.5]], lfo: vib, dest: musicGain, send: 0.55 }); },
-    low: function (t, f, d) { synth({ t: t, f: f, dur: d, vol: 0.1, a: 0.04, r: 0.3, cut: 420, osc: [["sawtooth", 0, 1], ["sine", 0, 1.2, 0.5], ["sawtooth", 0, 0.5, 2]], dest: musicGain, send: 0.2 }); },
-    wbass: function (t, f, d) { synth({ t: t, f: f, dur: d, vol: 0.11, decay: 0.35, r: 0.04, cut: 900, cutEnd: 260, q: 4, osc: [["sawtooth", 0, 1], ["square", 0, 0.4, 0.5]], dest: musicGain }); },
-    wpad: function (t, f, d) { synth({ t: t, f: f, dur: d, vol: 0.03, a: 0.2, r: 0.5, cut: 1700, osc: [["sawtooth", -11, 1], ["sawtooth", 11, 1]], dest: padBus, send: 0.3 }); },
-    warp: function (t, f, d) { synth({ t: t, f: f, dur: d, vol: 0.035, decay: 0.15, r: 0.05, cut: 3000, cutEnd: 800, osc: [["square", 0, 1], ["sawtooth", 7, 0.6]], dest: leadBus }); },
-    wlead: function (t, f, d) { synth({ t: t, f: f, dur: d, vol: 0.055, a: 0.02, r: 0.2, cut: 2400, osc: [["sawtooth", -5, 1], ["sawtooth", 5, 1]], lfo: vib, dest: leadBus, send: 0.3 }); }
-  };
-  function pump(t) { padBus.gain.cancelScheduledValues(t); padBus.gain.setValueAtTime(0.3, t); padBus.gain.linearRampToValueAtTime(1, t + 0.28); }
-  function drum(kit, ch, t) {
-    if (kit === "lofi") {
-      if (ch === "k") tone(lofiBus, "sine", 125, 42, t, 0.22, 0.5);
-      else if (ch === "g") tone(lofiBus, "sine", 110, 45, t, 0.14, 0.2);
-      else if (ch === "s") { noise(lofiBus, t, 0.16, 0.2, "bandpass", 1800); tone(lofiBus, "triangle", 190, 150, t, 0.08, 0.12); }
-      else if (ch === "h") noise(lofiBus, t, 0.04, 0.05, "highpass", 6000);
-    } else if (kit === "orch") {
-      if (ch === "T" || ch === "C") { tone(musicGain, "sine", 95, 38, t, 0.5, 0.5); noise(rvIn, t, 0.25, 0.25, "lowpass", 500); }
-      if (ch === "C") { noise(rvIn, t, 1.6, 0.2, "highpass", 4500); noise(musicGain, t, 0.9, 0.07, "highpass", 6000); }
-      else if (ch === "t") { tone(musicGain, "sine", 140, 70, t, 0.25, 0.28); noise(rvIn, t, 0.1, 0.1, "lowpass", 900); }
-      else if (ch === "r") noise(musicGain, t, 0.07, 0.09, "bandpass", 2200);
-    } else {
-      if (ch === "k" || ch === "K") { tone(musicGain, "sine", 150, 40, t, 0.2, 0.5); pump(t); }
-      if (ch === "K") { noise(musicGain, t, 0.2, 0.2, "bandpass", 1600); noise(rvIn, t, 0.3, 0.3, "bandpass", 1400); tone(musicGain, "triangle", 210, 160, t, 0.1, 0.12); }
-      else if (ch === "h") noise(musicGain, t, 0.03, 0.055, "highpass", 8000);
-      else if (ch === "o") noise(musicGain, t, 0.14, 0.055, "highpass", 7000);
-    }
-  }
-  function rp(s, n) { var o = []; for (var i = 0; i < n; i++) o.push(s); return o.join(" "); }
-  function ost(a, b, c) { return rp(a + ":1 -:1 " + a + ":1 " + b + ":1 " + c + ":1 -:1 " + c + ":1 " + b + ":1", 2); }
-  function arp(a, b, c, d) { return rp([a, b, c, d, c, b, a, b].join(":1 ") + ":1", 2); }
-  function pulse(lo, hi) { return rp(lo + ":1 " + lo + ":1 " + hi + ":1 " + lo + ":1", 4); }
-  var STYLES = {
-    // "Break Room at Lagrange Point": jazzy ii-V-I, dusty electric piano, boom-bap, vinyl crackle
-    lofi: {
-      bpm: 78, swing: 0.16, kit: "lofi", crackle: true,
-      tracks: [
-        ["ep", chord(
-          "D3+F3+A3+C4+E4:6 -:3 D3+F3+A3+C4+E4:5 -:2  G2+F3+B3+E4:6 -:3 G2+F3+B3+E4:5 -:2  C3+E3+G3+B3+D4:6 -:3 C3+E3+G3+B3+D4:5 -:2  A2+G3+C#4+F4:6 -:3 A2+G3+C#4+F4:5 -:2 " +
-          "F2+A3+C4+E4:6 -:3 F2+A3+C4+E4:5 -:2  E2+G#3+B3+D4:6 -:3 E2+G#3+D4+G4:5 -:2  A2+G3+C4+E4:6 -:3 A2+G3+C4+E4:5 -:2  D3+F#3+C4+E4:6 -:3 G2+F3+B3+D4:5 -:2")],
-        ["sub", track(
-          "D2:6 -:2 D2:2 A2:2 D2:4  G2:6 -:2 G2:2 D2:2 G2:4  C3:6 -:2 C3:2 G2:2 C3:4  A2:6 -:2 A2:2 E2:2 A2:2 C#3:2 " +
-          "F2:6 -:2 F2:2 C3:2 F2:4  E2:6 -:2 E2:2 B2:2 E2:4  A2:6 -:2 A2:2 E2:2 A2:4  D3:6 -:2 D3:2 -:2 G2:4")],
-        ["keys", track(
-          "-:4 A4:2 C5:2 E5:4 D5:2 C5:2  B4:6 -:2 A4:2 B4:2 D5:4  E5:4 D5:2 B4:2 G4:6 -:2  F4:4 G4:2 A4:2 C#5:4 -:4 " +
-          "-:4 C5:2 E5:2 A5:4 G5:2 E5:2  G#5:6 -:2 E5:2 D5:2 B4:4  C5:4 E5:2 G5:2 E5:6 -:2  F#5:4 E5:2 D5:2 B4:4 -:4")]
-      ],
-      drums: (rp("k-h-s-hgh-k-s-h-", 7) + " k-h-s-hgh-k-s-ss").replace(/\s/g, "")
-    },
-    // "Fleet Review": string ostinato, low brass, horn theme, taiko, hall reverb
-    orch: {
-      bpm: 126, kit: "orch",
-      tracks: [
-        ["str", chord("D3+A3+D4+F4:16 A#2+F3+A#3+D4:16 F3+A3+C4+F4:16 C3+G3+C4+E4:16 D3+A3+D4+F4:16 A#2+F3+A#3+D4:16 G2+D3+G3+A#3:16 A2+E3+A3+C#4:16")],
-        ["stac", track([ost("D4", "F4", "A4"), ost("A#3", "D4", "F4"), ost("C4", "F4", "A4"), ost("C4", "E4", "G4"), ost("D4", "F4", "A4"), ost("D4", "F4", "A#4"), ost("A#3", "D4", "G4"), ost("A3", "C#4", "E4")].join(" ")), 0.6],
-        ["low", track("D2:12 D2:4 A#1:12 A#1:4 F2:12 F2:4 C2:12 C2:4 D2:12 D2:4 A#1:12 A#1:4 G1:12 G1:4 A1:8 A1:4 A1:2 A1:2")],
-        ["horn", track(
-          "A4:4 D5:8 E5:2 F5:2  F5:6 E5:2 D5:8  C5:4 F5:8 G5:2 A5:2  G5:6 E5:2 C5:4 E5:4 " +
-          "A5:8 F5:4 D5:4  A#5:8 A5:4 F5:4  G5:6 A5:2 A#5:4 D6:4  C#6:8 A5:4 E5:4")]
-      ],
-      drums: "C---T-t-T---T-tt" + rp("T---T-t-T---T-tt", 3).replace(/\s/g, "") + "C---T-t-T---T-tt" + rp("T---T-t-T---T-tt", 2).replace(/\s/g, "") + "T---T-t-T-t-rrrr"
-    },
-    // "Neon Freight": pulsing bass, pumping pad, arpeggio, delayed lead, gated snare
-    wave: {
-      bpm: 110, kit: "wave",
-      tracks: [
-        ["wbass", track(rp(pulse("A2", "A3") + " " + pulse("F2", "F3") + " " + pulse("C3", "C4") + " " + pulse("G2", "G3"), 2)), 0.7],
-        ["wpad", chord(rp("A3+C4+E4:16 F3+A3+C4:16 E3+G3+C4:16 D3+G3+B3:16", 2))],
-        ["warp", track(rp(arp("A4", "C5", "E5", "A5") + " " + arp("F4", "A4", "C5", "F5") + " " + arp("G4", "C5", "E5", "G5") + " " + arp("G4", "B4", "D5", "G5"), 2)), 0.7],
-        ["wlead", track(
-          "E5:6 D5:2 C5:4 E5:4  F5:6 E5:2 C5:8  G5:6 E5:2 C5:4 G5:4  B5:6 A5:2 G5:4 D5:4 " +
-          "A5:8 G5:4 E5:4  F5:4 A5:4 C6:8  E6:6 D6:2 C6:4 G5:4  B5:8 D6:4 B5:4")]
-      ],
-      drums: (rp("k-h-K-h-k-h-K-ho", 7) + " k-h-K-h-k-h-KhKK").replace(/\s/g, "")
-    }
-  };
-  function schedStyle(sd, t) {
-    var i, k, e;
-    if (song.swing && step % 2 === 1) t += sd * song.swing;
-    for (i = 0; i < song.tracks.length; i++) {
-      var tr = song.tracks[i], m = tr[1]; e = m.map[step % m.len];
-      if (!e) continue;
-      var dur = e.l * sd * (tr[2] || 0.92);
-      if (e.ms) for (k = 0; k < e.ms.length; k++) INST[tr[0]](t + (tr[0] === "ep" ? k * 0.012 : 0), hz(e.ms[k]), dur);
-      else INST[tr[0]](t, hz(e.m), dur);
-    }
-    if (!songLite) { var ch = song.drums[step % song.drums.length]; if (ch !== "-") drum(song.kit, ch, t); }
-    if (song.crackle && Math.random() < 0.55) noise(musicGain, t + Math.random() * sd, 0.012, 0.012 + Math.random() * 0.02, "bandpass", 1500 + Math.random() * 4000);
-  }
-  function schedule() {
-    if (!ctx || !song || ctx.state !== "running") return;
-    var now = ctx.currentTime;
-    if (nextTime < now) nextTime = now + 0.05;
-    while (nextTime < now + 0.15) {
-      var sd = 60 / (song.bpm * tempoMul * baseMul) / 4, t = nextTime, e;
-      if (song.tracks) schedStyle(sd, t);
-      else {
-        e = song.lead.map[step % song.lead.len];
-        if (e) tone(leadBus, song.leadWave, hz(e.m), 0, t, e.l * sd * 0.85, 0.075);
-        e = song.bass.map[step % song.bass.len];
-        if (e) tone(musicGain, "triangle", hz(e.m), 0, t, e.l * sd * 0.9, 0.22);
-        var dch = song.drums[step % song.drums.length];
-        if (dch === "k") tone(musicGain, "sine", 160, 45, t, 0.11, 0.4);
-        else if (dch === "s") noise(musicGain, t, 0.09, 0.2, "highpass", 1500);
-        else if (dch === "h") noise(musicGain, t, 0.03, 0.09, "highpass", 7000);
-      }
-      nextTime += sd; step++;
-    }
-  }
-  function music(name) { // name: "title" | "game" | "recap" | null, played in the selected style
-    if (!ctx) return;
-    var key = name ? CONFIG.musicStyle + ":" + name : null;
-    if (key === songName) return;
-    songName = key; step = 0; tempoMul = 1; nextTime = ctx.currentTime + 0.08;
-    if (!name) { song = null; return; }
-    if (STYLES[CONFIG.musicStyle]) { song = STYLES[CONFIG.musicStyle]; songLite = name === "recap"; baseMul = name === "title" ? 0.94 : name === "recap" ? 0.88 : 1; }
-    else { song = SONGS[name]; songLite = false; baseMul = 1; }
-  }
-  function restyle() { var cur = songName ? songName.split(":")[1] : null; songName = "?"; music(cur); }
-  function peak() { if (!ana) return 0; ana.getFloatTimeDomainData(anaBuf); var m = 0; for (var i = 0; i < anaBuf.length; i++) m = Math.max(m, Math.abs(anaBuf[i])); return m; }
-  var SFX = {
-    tap: function (t) { tone(sfxGain, "p50", 880, 0, t, 0.04, 0.12); },
-    pickup: function (t) { tone(sfxGain, "p25", 520, 1040, t, 0.07, 0.14); },
-    rot: function (t, a) { tone(sfxGain, "p12", 700 + (a % 8) * 90, 0, t, 0.025, 0.09); },
-    stamp: function (t) { tone(sfxGain, "p50", 240, 70, t, 0.13, 0.22); noise(sfxGain, t, 0.12, 0.3, "lowpass", 2500, 300); },
-    erase: function (t) { noise(sfxGain, t, 0.25, 0.3, "bandpass", 4000, 400); tone(sfxGain, "p25", 900, 200, t, 0.22, 0.08); },
-    bonk: function (t) { tone(sfxGain, "triangle", 190, 0, t, 0.08, 0.35); tone(sfxGain, "triangle", 140, 0, t + 0.1, 0.12, 0.35); },
-    skip: function (t) { noise(sfxGain, t, 0.3, 0.25, "bandpass", 3000, 300); tone(sfxGain, "p25", 600, 90, t, 0.3, 0.13); tone(sfxGain, "p50", 180, 360, t + 0.3, 0.08, 0.13); },
-    chatter: function (t) { // goofy alien client mumbling
-      for (var i = 0; i < 5; i++) { var f = 300 + Math.random() * 700; tone(sfxGain, "p12", f, f * (0.7 + Math.random() * 0.7), t + i * 0.055, 0.05, 0.1); }
-    },
-    toss: function (t) { noise(sfxGain, t, 0.2, 0.28, "bandpass", 700, 3500); tone(sfxGain, "p25", 260, 980, t, 0.17, 0.11); tone(sfxGain, "triangle", 120, 60, t + 0.17, 0.09, 0.3); },
-    ship: function (t) { [67, 72, 79].forEach(function (m, i) { tone(sfxGain, "p25", hz(m), 0, t + i * 0.06, 0.09, 0.12); }); noise(sfxGain, t, 0.32, 0.12, "bandpass", 500, 4500); },
-    spray: function (t) { noise(sfxGain, t, 0.11, 0.06, "highpass", 3800); },
-    beep: function (t) { tone(sfxGain, "p50", 440, 0, t, 0.12, 0.16); },
-    go: function (t) { tone(sfxGain, "p50", 880, 0, t, 0.3, 0.16); tone(sfxGain, "p25", 1320, 0, t, 0.3, 0.08); },
-    tick: function (t) { tone(sfxGain, "p12", 1500, 0, t, 0.04, 0.14); },
-    coin: function (t) { tone(sfxGain, "p50", 1319, 0, t, 0.07, 0.13); tone(sfxGain, "p50", 1760, 0, t + 0.07, 0.22, 0.13); },
-    grade: function (t, gi) {
-      var seq, i;
-      if (gi === 0) seq = [72, 76, 79, 84, 88, 91, 96];
-      else if (gi === 1) seq = [72, 76, 79, 84];
-      else if (gi === 2) seq = [72, 79];
-      else if (gi === 3) seq = [67, 65];
-      if (seq) { for (i = 0; i < seq.length; i++) tone(sfxGain, "p25", hz(seq[i]), 0, t + i * 0.055, 0.09, 0.14); }
-      else { // D / F : sad trombone "womp womp"
-        var w = [311, 293, 277, 261];
-        for (i = 0; i < (gi === 5 ? 4 : 2); i++) tone(sfxGain, "sawtooth", w[i], w[i] * (i === 3 || (gi === 4 && i === 1) ? 0.8 : 0.97), t + i * 0.2, i === 3 ? 0.5 : 0.19, 0.13);
-      }
-    },
-    end: function (t) { tone(sfxGain, "sawtooth", 120, 100, t, 0.55, 0.2); tone(sfxGain, "p50", 123, 100, t, 0.55, 0.12); noise(sfxGain, t, 0.5, 0.12, "lowpass", 900); },
-    fanfare: function (t) { [60, 64, 67, 72, 67, 72, 76].forEach(function (m, i) { tone(sfxGain, "p25", hz(m), 0, t + i * 0.09, i === 6 ? 0.4 : 0.085, 0.13); }); }
-  };
-  function sfx(name, arg) { if (ctx && ctx.state === "running" && SFX[name]) try { SFX[name](ctx.currentTime + 0.005, arg); } catch (e) { } }
-  return {
-    init: init, music: music, sfx: sfx, applyVolumes: applyVolumes, restyle: restyle, peak: peak,
-    setTempo: function (m) { tempoMul = m; },
-    isMuted: function () { return muted; },
-    toggleMute: function () { muted = !muted; saveJSON("tpbq_mute", muted); applyVolumes(); return muted; }
-  };
-})();
-
-/* ================= ART: everything is painted procedurally on canvas (no image files) ================= */
-function $(id) { return document.getElementById(id); }
-var INK = "#05060f";
-var TCOL = ["#b48cff", "#2fbf5a", "#f0b22a", "#3f7dff", "#19c3d6", "#cdf5a8", "#ff5a3c"]; // order-text colours per terrain
-var TEX = [], texKey = "", chipURL = {}, L = null;
-var paintC = document.createElement("canvas"), stamps = [], pendingLayout = false, builtHandKey = "";
-
-function rgb(c) { return "rgb(" + (c[0] | 0) + "," + (c[1] | 0) + "," + (c[2] | 0) + ")"; }
-function mix(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
-function rr(c, x, y, w, h, r) {
-  c.beginPath(); c.moveTo(x + r, y); c.lineTo(x + w - r, y); c.quadraticCurveTo(x + w, y, x + w, y + r);
-  c.lineTo(x + w, y + h - r); c.quadraticCurveTo(x + w, y + h, x + w - r, y + h); c.lineTo(x + r, y + h);
-  c.quadraticCurveTo(x, y + h, x, y + h - r); c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y); c.closePath();
-}
-function fillGrad(x, S, a, b) { var g = x.createLinearGradient(0, 0, S, S); g.addColorStop(0, a); g.addColorStop(1, b); x.fillStyle = g; x.fillRect(0, 0, S, S); }
-function sparkle(x, X, Y, r, col) {
-  x.fillStyle = col; x.beginPath();
-  x.moveTo(X, Y - r); x.quadraticCurveTo(X, Y, X + r, Y); x.quadraticCurveTo(X, Y, X, Y + r); x.quadraticCurveTo(X, Y, X - r, Y); x.quadraticCurveTo(X, Y, X, Y - r); x.fill();
-}
-
-/* ----- terrain paintings (S x S css px, seeded) ----- */
-var PAINT = [];
-PAINT[0] = function (x, S, r) { // the void (eraser)
-  var cx = L.cwPx / 2, cy = L.chPx / 2, g = x.createRadialGradient(cx, cy, 2, cx, cy, S * 0.7), k, a;
-  g.addColorStop(0, "#000"); g.addColorStop(0.3, "#2c0f66"); g.addColorStop(1, "#0a0420"); x.fillStyle = g; x.fillRect(0, 0, S, S);
-  x.lineCap = "round";
-  for (k = 0; k < 3; k++) {
-    x.beginPath();
-    for (a = 0; a < Math.PI * 5; a += 0.15) { var rad = 3 + a * 6, px = cx + Math.cos(a + k * 2.1) * rad, py = cy + Math.sin(a + k * 2.1) * rad; if (a === 0) x.moveTo(px, py); else x.lineTo(px, py); }
-    x.strokeStyle = "rgba(205,150,255," + (0.6 - k * 0.14) + ")"; x.lineWidth = 2.6 - k * 0.6; x.stroke();
-  }
-  for (k = 0; k < 50; k++) sparkle(x, r() * S, r() * S, 1 + r() * 2.2, "rgba(255,255,255," + (0.4 + r() * 0.6) + ")");
-};
-PAINT[1] = function (x, S, r) { // forest: plump shaded canopies
-  fillGrad(x, S, "#1f7a3c", "#083f20");
-  var pts = [], row = 0, gy, gx;
-  for (gy = -4; gy < S + 12; gy += 13, row++) for (gx = -8; gx < S + 12; gx += 16) pts.push([gx + (row % 2) * 8 + r() * 6 - 3, gy + r() * 5 - 2.5, 7.5 + r() * 3.5]);
-  pts.forEach(function (p) {
-    var X = p[0], Y = p[1], R = p[2];
-    x.fillStyle = "rgba(2,36,18,.5)"; x.beginPath(); x.ellipse(X + 3, Y + 4, R, R * 0.85, 0, 0, 7); x.fill();
-    var cg = x.createRadialGradient(X - R * 0.35, Y - R * 0.4, R * 0.1, X, Y, R);
-    cg.addColorStop(0, "#a5e072"); cg.addColorStop(0.4, "#2f9a4c"); cg.addColorStop(1, "#0a4c28");
-    x.fillStyle = cg; x.beginPath(); x.arc(X, Y, R, 0, 7); x.fill();
-    x.strokeStyle = "rgba(5,46,24,.75)"; x.lineWidth = 0.9; x.stroke();
-  });
-};
-PAINT[2] = function (x, S, r) { // desert: lit dune crests with soft shadow
-  fillGrad(x, S, "#f2c56f", "#c98232");
-  for (var y = -6, row = 0; y < S + 12; y += 15, row++) {
-    var ph = r() * 6.3, amp = 3 + r() * 3, pass, X;
-    for (pass = 0; pass < 2; pass++) {
-      x.beginPath();
-      for (X = -4; X <= S + 4; X += 4) { var Y = y + Math.sin(X / 17 + ph) * amp + Math.sin(X / 7 + ph * 2) * 1.2 + (pass ? 0 : 4); if (X === -4) x.moveTo(X, Y); else x.lineTo(X, Y); }
-      x.strokeStyle = pass ? "rgba(255,246,200,.95)" : "rgba(150,78,20,.34)"; x.lineWidth = pass ? 2 : 6; x.lineCap = "round"; x.stroke();
-    }
-  }
-  for (var k = 0; k < S * S / 260; k++) { x.fillStyle = "rgba(140,80,24,.55)"; x.beginPath(); x.arc(r() * S, r() * S, 0.8 + r() * 0.8, 0, 7); x.fill(); }
-};
-function waves(x, S, r, stepY, len, colA, colB, lw) {
-  x.lineCap = "round";
-  for (var y = 2, row = 0; y < S + stepY; y += stepY, row++) for (var X = -len + (row % 2) * len * 0.55 + r() * 4; X < S + len; X += len * 1.15) {
-    var Y = y + r() * 3 - 1.5;
-    x.beginPath(); x.moveTo(X, Y); x.quadraticCurveTo(X + len * 0.25, Y - len * 0.32, X + len * 0.5, Y); x.quadraticCurveTo(X + len * 0.75, Y + len * 0.26, X + len, Y);
-    x.strokeStyle = colA; x.lineWidth = lw; x.stroke();
-    if (r() < 0.6) { x.beginPath(); x.moveTo(X + len * 0.08, Y - 1.5); x.quadraticCurveTo(X + len * 0.25, Y - len * 0.36 - 1, X + len * 0.44, Y - 1.5); x.strokeStyle = colB; x.lineWidth = lw * 0.6; x.stroke(); }
-  }
-}
-PAINT[3] = function (x, S, r) { // sea: deep, rolling
-  fillGrad(x, S, "#2a63e0", "#0a2580");
-  for (var k = 0; k < 9; k++) { var X = r() * S, Y = r() * S, R = 20 + r() * 30, g = x.createRadialGradient(X, Y, 0, X, Y, R); g.addColorStop(0, "rgba(4,14,70,.45)"); g.addColorStop(1, "rgba(4,14,70,0)"); x.fillStyle = g; x.fillRect(X - R, Y - R, R * 2, R * 2); }
-  waves(x, S, r, 11, 19, "rgba(120,180,255,.9)", "rgba(255,255,255,.85)", 2.4);
-};
-PAINT[4] = function (x, S, r) { // lake: bright shallows, ripples, glints
-  fillGrad(x, S, "#7fe9e6", "#1596b8");
-  for (var k = 0; k < S * S / 1500; k++) {
-    var X = r() * S, Y = r() * S, n = 2 + (r() * 2 | 0);
-    for (var j = 1; j <= n; j++) { x.beginPath(); x.ellipse(X, Y, j * 6, j * 2.6, 0, 0, 7); x.strokeStyle = "rgba(255,255,255," + (0.75 - j * 0.16) + ")"; x.lineWidth = 1.6; x.stroke(); }
-  }
-  for (k = 0; k < S * S / 3200; k++) sparkle(x, r() * S, r() * S, 2.5 + r() * 2.5, "rgba(255,255,255,.95)");
-};
-PAINT[5] = function (x, S, r) { // plains: pale, open meadow with soft bands and sparse grass
-  fillGrad(x, S, "#e6f8c8", "#bfe6a0");
-  var y, X, k;
-  for (y = 0; y < S + 20; y += 22) { var ph = r() * 6; x.beginPath(); for (X = -4; X <= S + 4; X += 6) { var Y = y + Math.sin(X / 26 + ph) * 6; if (X === -4) x.moveTo(X, Y); else x.lineTo(X, Y); } x.strokeStyle = "rgba(255,255,255,.5)"; x.lineWidth = 9; x.lineCap = "round"; x.stroke(); }
-  x.lineWidth = 1.3; x.strokeStyle = "rgba(96,160,84,.8)";
-  for (k = 0; k < S * S / 260; k++) { X = r() * S; y = r() * S; x.beginPath(); x.moveTo(X - 2.5, y - 3); x.lineTo(X, y + 1.5); x.lineTo(X, y - 4.5); x.moveTo(X, y + 1.5); x.lineTo(X + 2.5, y - 3); x.stroke(); }
-};
-PAINT[6] = function (x, S, r) { // hills: red rock, sharp faceted ridges (lit left face, shadowed right face)
-  fillGrad(x, S, "#b8452c", "#741f14");
-  for (var y = 6, row = 0; y < S + 22; y += 13, row++) for (var X = -16 + (row % 2) * 11; X < S + 16; X += 22) {
-    var cx = X + r() * 5 - 2.5, by = y + r() * 3, w = 21 + r() * 5, h = 13 + r() * 5, px = cx + (r() * 4 - 2);
-    x.beginPath(); x.moveTo(cx - w / 2, by); x.lineTo(px, by - h); x.lineTo(px + 1.5, by); x.closePath(); x.fillStyle = "#f29a70"; x.fill();
-    x.beginPath(); x.moveTo(px, by - h); x.lineTo(cx + w / 2, by); x.lineTo(px + 1.5, by); x.closePath(); x.fillStyle = "#4e120c"; x.fill();
-    x.beginPath(); x.moveTo(cx - w / 2, by); x.lineTo(px, by - h); x.lineTo(cx + w / 2, by); x.strokeStyle = "rgba(40,8,6,.85)"; x.lineWidth = 1.1; x.lineJoin = "round"; x.stroke();
-    x.beginPath(); x.moveTo(px - 2.5, by - h * 0.62); x.lineTo(px, by - h); x.lineTo(px + 2, by - h * 0.66); x.closePath(); x.fillStyle = "rgba(255,236,220,.85)"; x.fill();
-  }
-};
-function buildTextures() {
-  var S = Math.ceil(Math.max(L.D, L.chPx, L.cwPx)) + 2, key = S + ":" + L.dpr + ":" + Math.round(L.cwPx) + ":" + Math.round(L.chPx) + ":" + CONFIG.artStyle;
-  if (key === texKey) return;
-  texKey = key; chipURL = {};
-  for (var id = 0; id <= 6; id++) {
-    var c = document.createElement("canvas"); c.width = c.height = Math.ceil(S * L.dpr);
-    var x = c.getContext("2d"); x.scale(L.dpr, L.dpr); (POSTER() ? posterPaint(id) : PAINT[id])(x, S, makeRng(1000 + id * 77)); TEX[id] = c;
-  }
-}
-
-/* ================= ART STYLE 2: "INKED POSTER" (flat brochure colour + hand-inked map symbols) ================= */
-function POSTER() { return CONFIG.artStyle === "poster"; }
-var PCOL = ["#0f272c", "#3a9654", "#f2b33d", "#2e6ebe", "#46beba", "#cede96", "#d65430"], PINK = "#14262b";
-function inkSym(x, id, r) { // one map symbol, drawn around the origin in a 77-unit cell
-  var k, an, dx, dy; x.beginPath();
-  if (id === 1) { for (k = 0; k < 7; k++) { an = -2.6 + k * 0.35; x.moveTo(0, 16); x.quadraticCurveTo(Math.cos(an) * 10, Math.sin(an) * 10, Math.cos(an) * (20 + r() * 5), -2 + Math.sin(an) * (20 + r() * 5)); } x.moveTo(0, 16); x.lineTo(1, 28); }
-  if (id === 2) { x.moveTo(-28, 6); x.quadraticCurveTo(-6, -18, 10, -2); x.quadraticCurveTo(18, 4, 30, 4); x.stroke(); x.beginPath(); for (k = 0; k < 6; k++) { dx = -16 + r() * 40; dy = 12 + r() * 12; x.moveTo(dx, dy); x.arc(dx, dy, 2, 0, 7); } x.fill(); x.beginPath(); }
-  if (id === 3) { x.moveTo(-28, 0); x.quadraticCurveTo(-18, -13, -8, 0); x.quadraticCurveTo(2, 10, 12, -2); x.quadraticCurveTo(19, -12, 28, -9); }
-  if (id === 4) { x.moveTo(-24, -5 + r() * 2); x.lineTo(20, -5 + r() * 2); x.moveTo(-12, 7); x.lineTo(26, 7 + r() * 2); }
-  if (id === 5) { x.moveTo(-8, -10); x.quadraticCurveTo(-3, 0, 0, 10); x.quadraticCurveTo(1, -2, 2, -14); x.moveTo(0, 10); x.quadraticCurveTo(5, 0, 11, -8); }
-  if (id === 6) { x.moveTo(-30, 14); x.quadraticCurveTo(-10, -26, 2, -20); x.quadraticCurveTo(16, -12, 30, 14); x.stroke(); x.beginPath(); x.lineWidth *= 0.6; for (k = 0; k < 6; k++) { x.moveTo(4 + k * 4, -14 + k * 4); x.lineTo(k * 4.6, 12); } }
-  x.stroke();
-}
-function posterPaint(id) {
-  return function (x, S, r) {
-    var k, row, X, Y, step = 26, sc = step / 77;
-    x.fillStyle = PCOL[id]; x.fillRect(0, 0, S, S);
-    if (id === 0) { // erase: empty canvas with faint crosses
-      x.strokeStyle = "rgba(244,230,200,.5)"; x.lineWidth = 2; x.lineCap = "round"; x.beginPath();
-      for (Y = 15; Y < S; Y += 30) for (X = 15; X < S; X += 30) { x.moveTo(X - 5, Y - 5); x.lineTo(X + 5, Y + 5); x.moveTo(X + 5, Y - 5); x.lineTo(X - 5, Y + 5); }
-      x.stroke(); return;
-    }
-    x.fillStyle = "rgba(255,255,255,.13)";
-    for (k = 0; k < S * S / 7000; k++) { x.beginPath(); x.ellipse(r() * S, r() * S, 16 + r() * 22, 10 + r() * 12, r() * 3, 0, 7); x.fill(); }
-    x.strokeStyle = x.fillStyle = PINK; x.lineCap = "round"; x.lineJoin = "round";
-    for (Y = step / 2, row = 0; Y < S + step; Y += step, row++) for (X = (row % 2 ? step / 2 : 0); X < S + step; X += step) {
-      x.save(); x.translate(X + (r() - 0.5) * 5, Y + (r() - 0.5) * 4); x.scale(sc, sc); x.lineWidth = 3.7 * (0.85 + r() * 0.4); inkSym(x, id, r); x.restore();
-    }
-    var cv = x.canvas, im = x.getImageData(0, 0, cv.width, cv.height), d = im.data, n; // print grain
-    for (k = 0; k < d.length; k += 4) { n = (r() - 0.5) * 22; d[k] += n; d[k + 1] += n; d[k + 2] += n; }
-    x.putImageData(im, 0, 0);
-  };
-}
-function star4(x, X, Y, q) { x.beginPath(); x.moveTo(X, Y - q * 2); x.lineTo(X + q * 0.5, Y - q * 0.5); x.lineTo(X + q * 2, Y); x.lineTo(X + q * 0.5, Y + q * 0.5); x.lineTo(X, Y + q * 2); x.lineTo(X - q * 0.5, Y + q * 0.5); x.lineTo(X - q * 2, Y); x.lineTo(X - q * 0.5, Y - q * 0.5); x.fill(); }
-function drawSpacePoster() {
-  var c = $("bg"), w = L.vw, h = L.vh, d = L.dpr, x = c.getContext("2d"), r = makeRng(42), k;
-  c.width = Math.round(w * d); c.height = Math.round(h * d); c.style.width = w + "px"; c.style.height = h + "px"; x.scale(d, d);
-  x.fillStyle = "#17383f"; x.fillRect(0, 0, w, h);
-  x.fillStyle = "#f4e6c8"; for (k = 0; k < 60; k++) star4(x, r() * w, r() * h, 0.9 + r() * 2.2);
-}
-function drawCardPoster(c, id, w, h, poolAlpha, shadow) {
-  var x = -w / 2, y = -h / 2, d = L.dpr, rad = Math.min(w, h) * 0.26, f = Math.max(3, w * 0.07);
-  if (shadow) { c.fillStyle = "rgba(0,0,0,.45)"; rr(c, x + 3.5, y + 3.5, w, h, rad); c.fill(); }
-  c.fillStyle = "#f4e6c8"; rr(c, x, y, w, h, rad); c.fill();
-  c.save(); rr(c, x + f, y + f, w - 2 * f, h - 2 * f, Math.max(2, rad - f)); c.clip();
-  c.globalAlpha = poolAlpha;
-  if (id === 0) { c.fillStyle = "#17383f"; c.fillRect(x, y, w, h); }
-  else c.drawImage(TEX[id], 0, 0, Math.min(TEX[id].width, w * 1.25 * d), Math.min(TEX[id].height, h * 1.25 * d), x, y, w, h);
-  c.restore();
-  if (id === 0) { var q = w * 0.2; c.strokeStyle = "#f4e6c8"; c.lineWidth = Math.max(2.5, w * 0.08); c.lineCap = "round"; c.beginPath(); c.moveTo(-q, -q); c.lineTo(q, q); c.moveTo(q, -q); c.lineTo(-q, q); c.stroke(); }
-}
-function alienSVGPoster(o) {
-  var k = o.look, head = PCOL[o.tint], shirt = ["#e2622b", "#f2b33d", "#3aa7a3"][k.antenna], ink = PINK, cream = "#f4e6c8";
-  var s = '<svg viewBox="0 0 58 80"><path d="M5 80 Q7 57 29 57 Q51 57 53 80 Z" fill="' + shirt + '" stroke="' + ink + '" stroke-width="2"/>';
-  s += '<path d="M23 58 L29 66 L35 58" fill="none" stroke="' + cream + '" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>';
-  var st = k.antenna === 0 ? [[29, 4]] : k.antenna === 1 ? [[20, 5], [38, 5]] : [[16, 9], [29, 3], [42, 9]];
-  st.forEach(function (a) { s += '<path d="M' + (29 + (a[0] - 29) * 0.5) + ' 16 L' + a[0] + " " + a[1] + '" stroke="' + ink + '" stroke-width="2" fill="none"/><circle cx="' + a[0] + '" cy="' + a[1] + '" r="3" fill="#f2b33d" stroke="' + ink + '" stroke-width="1.5"/>'; });
-  var hf = ' fill="' + head + '" stroke="' + ink + '" stroke-width="2.2" stroke-linejoin="round"/>';
-  if (k.head === 0) s += '<ellipse cx="29" cy="32" rx="14" ry="19"' + hf;
-  else if (k.head === 1) s += '<path d="M14 18 Q14 13 19 13 L39 13 Q44 13 44 18 L42 42 Q29 54 16 42 Z"' + hf;
-  else s += '<path d="M9 34 Q9 12 29 12 Q49 12 49 34 Q42 50 29 50 Q16 50 9 34 Z"' + hf;
-  var ex = k.eyes === 1 ? [[29, 29, 7.5]] : k.eyes === 2 ? [[22, 30, 5.5], [36, 30, 5.5]] : [[19, 31, 4], [29, 26, 4], [39, 31, 4]];
-  ex.forEach(function (e) { s += '<ellipse cx="' + e[0] + '" cy="' + e[1] + '" rx="' + e[2] + '" ry="' + (e[2] * 1.15) + '" fill="' + cream + '" stroke="' + ink + '" stroke-width="1.4"/><circle cx="' + (e[0] + 1) + '" cy="' + (e[1] + 1.5) + '" r="' + (e[2] * 0.42) + '" fill="' + ink + '"/>'; });
-  s += '<path d="M24 43 h10" stroke="' + ink + '" stroke-width="2.2" stroke-linecap="round"/>';
-  return s + "</svg>";
-}
-function applyArt() { // switch between the two art styles (settings)
-  document.body.classList.toggle("poster", POSTER());
-  texKey = ""; builtKey = ""; LY = null; if (L) L.art = null;
-  layout();
-}
-
-/* ----- deep space backdrop ----- */
-function drawSpace() {
-  if (POSTER()) return drawSpacePoster();
-  var c = $("bg"), w = L.vw, h = L.vh, d = L.dpr, x = c.getContext("2d"), r = makeRng(42), k, g;
-  c.width = Math.round(w * d); c.height = Math.round(h * d); c.style.width = w + "px"; c.style.height = h + "px"; x.scale(d, d);
-  g = x.createLinearGradient(0, 0, w * 0.4, h); g.addColorStop(0, "#03040c"); g.addColorStop(0.5, "#0b0e2e"); g.addColorStop(1, "#040a18"); x.fillStyle = g; x.fillRect(0, 0, w, h);
-  x.globalCompositeOperation = "lighter";
-  var neb = [[0.9, 0.45, 0.5, "255,43,214", 0.11], [0.08, 0.65, 0.55, "41,240,255", 0.1], [0.5, 0.3, 0.45, "90,70,255", 0.14]];
-  neb.forEach(function (n) { var X = n[0] * w, Y = n[1] * h, R = n[2] * w * 1.2; g = x.createRadialGradient(X, Y, 0, X, Y, R); g.addColorStop(0, "rgba(" + n[3] + "," + n[4] + ")"); g.addColorStop(1, "rgba(" + n[3] + ",0)"); x.fillStyle = g; x.fillRect(0, 0, w, h); });
-  x.globalCompositeOperation = "source-over";
-  for (k = 0; k < 170; k++) { x.fillStyle = "rgba(255,255,255," + (0.25 + r() * 0.75) + ")"; x.beginPath(); x.arc(r() * w, r() * h, 0.4 + r() * 1.1, 0, 7); x.fill(); }
-  for (k = 0; k < 14; k++) sparkle(x, r() * w, r() * h, 3 + r() * 5, k % 3 ? "#fff" : "#ffe9a0");
-  function orb(X, Y, R, a, b, c2, ring) {
-    x.save(); x.shadowColor = "rgba(0,0,0,.6)"; x.shadowBlur = 20;
-    if (ring) { x.strokeStyle = "rgba(120,200,255,.35)"; x.lineWidth = R * 0.16; x.beginPath(); x.ellipse(X, Y, R * 1.7, R * 0.42, -0.35, Math.PI, Math.PI * 2); x.stroke(); }
-    g = x.createRadialGradient(X - R * 0.4, Y - R * 0.45, R * 0.1, X, Y, R * 1.05); g.addColorStop(0, a); g.addColorStop(0.55, b); g.addColorStop(1, c2);
-    x.fillStyle = g; x.beginPath(); x.arc(X, Y, R, 0, 7); x.fill(); x.shadowBlur = 0;
-    x.save(); x.clip(); x.globalAlpha = 0.12; x.strokeStyle = "#fff"; x.lineWidth = R * 0.09;
-    for (var j = -2; j <= 2; j++) { x.beginPath(); x.ellipse(X, Y + j * R * 0.33, R * 1.2, R * 0.16, -0.25, 0, 7); x.stroke(); }
-    x.restore();
-    if (ring) { x.strokeStyle = "rgba(140,215,255,.8)"; x.lineWidth = R * 0.1; x.beginPath(); x.ellipse(X, Y, R * 1.7, R * 0.42, -0.35, 0, Math.PI); x.stroke(); x.strokeStyle = "rgba(255,255,255,.7)"; x.lineWidth = 1.2; x.beginPath(); x.ellipse(X, Y, R * 1.86, R * 0.47, -0.35, 0, Math.PI); x.stroke(); }
-    x.restore();
-  }
-  orb(w * 0.02, h * 0.5, w * 0.12, "#b7c2f2", "#474c9c", "#100e30", true);
-  orb(w * 0.95, h * 0.36, w * 0.045, "#a6ecff", "#236f8c", "#06202c", false);
-}
-
-/* ----- planet = flat build canvas. Every stamp is painted ONCE onto a persistent layer (paintC) and never re-derived,
-   so what you put down stays exactly as you put it until something is stamped on top of it. ----- */
-function stampPaint(ctx, Dp, G, s) { // s = {cx, cy, ang, id} in grid units
-  var k = Dp / G, w = L.cw * k, h = L.ch * k, d = L.dpr, t = TEX[s.id];
-  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.beginPath(); ctx.arc(Dp / 2, Dp / 2, Dp / 2, 0, 7); ctx.clip();
-  ctx.translate(s.cx * k, s.cy * k); ctx.rotate(s.ang);
-  if (s.id === 0) ctx.clearRect(-w / 2, -h / 2, w, h);
-  else {
-    ctx.drawImage(t, 0, 0, Math.min(t.width, Math.round(L.cwPx * d)), Math.min(t.height, Math.round(L.chPx * d)), -w / 2, -h / 2, w, h);
-    ctx.lineWidth = Math.max(1, k * 0.8); ctx.strokeStyle = "rgba(4,6,16,.6)"; ctx.strokeRect(-w / 2, -h / 2, w, h);
-  }
-  ctx.restore();
-}
-function repaint() { // rebuild the paint layer from the stamp log (only needed after a resize)
-  paintC.width = paintC.height = L.Dp;
-  var x = paintC.getContext("2d"), G = CONFIG.GRID;
-  for (var i = 0; i < stamps.length; i++) stampPaint(x, L.Dp, G, stamps[i]);
-}
-function clearPaint() { stamps = []; if (paintC.width !== L.Dp) paintC.width = paintC.height = L.Dp; var x = paintC.getContext("2d"); x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, L.Dp, L.Dp); }
-function composePlanet(ctx, Dp, src) {
-  var R = Dp / 2, k, st = Dp / 8;
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, Dp, Dp);
-  ctx.save(); ctx.beginPath(); ctx.arc(R, R, R, 0, 7); ctx.clip();
-  ctx.fillStyle = "#070b20"; ctx.fillRect(0, 0, Dp, Dp);
-  ctx.strokeStyle = "rgba(41,240,255,.16)"; ctx.lineWidth = Math.max(1, Dp / 260); ctx.beginPath();
-  for (k = 1; k < 8; k++) { ctx.moveTo(k * st, 0); ctx.lineTo(k * st, Dp); ctx.moveTo(0, k * st); ctx.lineTo(Dp, k * st); }
-  ctx.stroke();
-  ctx.strokeStyle = "rgba(41,240,255,.3)"; ctx.beginPath(); ctx.arc(R, R, R * 0.5, 0, 7); ctx.moveTo(R, 0); ctx.lineTo(R, Dp); ctx.moveTo(0, R); ctx.lineTo(Dp, R); ctx.stroke();
-  ctx.drawImage(src, 0, 0, src.width, src.height, 0, 0, Dp, Dp);
-  ctx.restore();
-  ctx.strokeStyle = "rgba(160,235,255,.85)"; ctx.lineWidth = Math.max(1.5, Dp / 150); ctx.beginPath(); ctx.arc(R, R, R - ctx.lineWidth / 2, 0, 7); ctx.stroke();
-}
-function snapshot() {
-  var c = document.createElement("canvas"), px = Math.round(110 * L.dpr); c.width = c.height = px;
-  composePlanet(c.getContext("2d"), px, paintC); return c;
-}
-
-/* ----- terrain card = thin chrome frame, corner studs, a pool of terrain. Drawn centred on the origin ----- */
-function drawCard(c, id, w, h, poolAlpha, shadow) {
-  if (POSTER()) return drawCardPoster(c, id, w, h, poolAlpha, shadow);
-  var f = Math.max(2.5, w * 0.05), x = -w / 2, y = -h / 2, d = L.dpr, g, k;
-  g = c.createLinearGradient(x, y, x + w, y + h);
-  [[0, "#ffffff"], [0.2, "#9aa4c2"], [0.42, "#f1f4ff"], [0.6, "#6c7697"], [0.82, "#dfe5f8"], [1, "#7d86a6"]].forEach(function (s) { g.addColorStop(s[0], s[1]); });
-  c.save();
-  if (shadow) { c.shadowColor = "rgba(0,0,0,.6)"; c.shadowBlur = 9 * d; c.shadowOffsetX = 3 * d; c.shadowOffsetY = 6 * d; }
-  rr(c, x, y, w, h, 2.5); c.fillStyle = g; c.fill(); c.restore();
-  c.lineWidth = 1; c.strokeStyle = INK; rr(c, x, y, w, h, 2.5); c.stroke();
-  var iw = w - 2 * f, ih = h - 2 * f, ix = x + f, iy = y + f;
-  c.save(); c.beginPath(); c.rect(ix, iy, iw, ih); c.clip();
-  c.fillStyle = "#0a0624"; c.fillRect(ix, iy, iw, ih);
-  c.globalAlpha = poolAlpha;
-  c.drawImage(TEX[id], 0, 0, Math.min(TEX[id].width, L.cwPx * d), Math.min(TEX[id].height, L.chPx * d), ix, iy, iw, ih);
-  c.globalAlpha = 1;
-  g = c.createLinearGradient(0, iy, 0, iy + Math.min(10, ih * 0.12)); g.addColorStop(0, "rgba(4,0,30,.6)"); g.addColorStop(1, "rgba(4,0,30,0)"); c.fillStyle = g; c.fillRect(ix, iy, iw, ih); // recessed pool
-  g = c.createLinearGradient(ix, 0, ix + Math.min(8, iw * 0.16), 0); g.addColorStop(0, "rgba(4,0,30,.5)"); g.addColorStop(1, "rgba(4,0,30,0)"); c.fillStyle = g; c.fillRect(ix, iy, iw, ih);
-  c.fillStyle = "rgba(255,255,255,.13)"; c.beginPath(); c.moveTo(ix + iw * 0.45, iy); c.lineTo(ix + iw, iy); c.lineTo(ix + iw, iy + ih * 0.3); c.lineTo(ix + iw * 0.1, iy + ih * 0.8); c.lineTo(ix, iy + ih * 0.62); c.closePath(); c.fill(); // gloss
-  c.restore();
-  c.lineWidth = 0.8; c.strokeStyle = "rgba(26,16,53,.9)"; c.strokeRect(ix, iy, iw, ih);
-  var s = Math.max(3, f * 1.25), cs = [[x, y], [x + w, y], [x, y + h], [x + w, y + h]];
-  for (k = 0; k < 4; k++) { // corner diamond studs
-    c.save(); c.translate(cs[k][0] + (k % 2 ? -f / 2 : f / 2), cs[k][1] + (k < 2 ? f / 2 : -f / 2)); c.rotate(Math.PI / 4);
-    g = c.createLinearGradient(-s, -s, s, s); g.addColorStop(0, "#fff"); g.addColorStop(0.5, "#aab3d1"); g.addColorStop(1, "#4d5678");
-    c.fillStyle = g; c.fillRect(-s, -s, 2 * s, 2 * s); c.lineWidth = 1; c.strokeStyle = INK; c.strokeRect(-s, -s, 2 * s, 2 * s);
-    c.fillStyle = "rgba(255,255,255,.9)"; c.fillRect(-s * 0.4, -s * 0.4, s * 0.8, s * 0.8); c.restore();
-  }
-  if (id === 0) { c.strokeStyle = "#ff5a7a"; c.lineWidth = Math.max(2, w * 0.05); c.lineCap = "round"; c.beginPath(); c.moveTo(-iw * 0.28, -iw * 0.28); c.lineTo(iw * 0.28, iw * 0.28); c.moveTo(iw * 0.28, -iw * 0.28); c.lineTo(-iw * 0.28, iw * 0.28); c.stroke(); }
-}
-function chip(id) {
-  if (id === ANY) return '<span class="chip any"></span>';
-  if (!chipURL[id]) { var c = document.createElement("canvas"); c.width = c.height = 48; c.getContext("2d").drawImage(TEX[id], 0, 0, 44 * L.dpr, 44 * L.dpr, 0, 0, 48, 48); chipURL[id] = c.toDataURL(); }
-  return '<span class="chip" style="background-image:url(' + chipURL[id] + ')"></span>';
-}
-function tname(id) { return id === ANY ? "ANY" : TERRAINS[id].name; }
-
-function alienSVG(o, p) {
-  if (POSTER()) return alienSVGPoster(o);
-  var base = TERRAINS[o.tint].color, hi = rgb(mix(base, [255, 255, 255], 0.3)), mid = rgb(mix(base, [10, 10, 40], 0.25)), lo = rgb(mix(base, [4, 4, 20], 0.72)), k = o.look, ink = INK;
-  var neon = ["#29f0ff", "#ff2bd6", "#ffb000"][k.antenna];
-  var s = '<svg viewBox="0 0 58 80"><defs>' +
-    '<radialGradient id="' + p + 'h" cx=".3" cy=".25" r=".95"><stop offset="0" stop-color="' + hi + '"/><stop offset=".5" stop-color="' + mid + '"/><stop offset="1" stop-color="' + lo + '"/></radialGradient>' +
-    '<linearGradient id="' + p + 's" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a5380"/><stop offset=".5" stop-color="#1e2342"/><stop offset="1" stop-color="#090b1a"/></linearGradient></defs>';
-  s += '<path d="M6 80 L11 59 Q29 50 47 59 L52 80 Z" fill="url(#' + p + 's)" stroke="' + ink + '" stroke-width="2"/>';
-  s += '<path d="M17 60 L22 80 M41 60 L36 80" stroke="' + neon + '" stroke-width="1.6" fill="none"/><path d="M25 66 h8" stroke="' + neon + '" stroke-width="2.4" stroke-linecap="round"/>';
-  s += '<path d="M16 57 Q29 64 42 57 L42 51 Q29 58 16 51 Z" fill="#7d86b3" stroke="' + ink + '" stroke-width="1.8"/>';
-  var hf = ' fill="url(#' + p + 'h)" stroke="' + ink + '" stroke-width="2.2" stroke-linejoin="round"/>';
-  if (k.head === 0) s += '<ellipse cx="29" cy="30" rx="13" ry="18"' + hf;
-  else if (k.head === 1) s += '<path d="M13 14 L45 14 L41 42 L29 50 L17 42 Z"' + hf;
-  else s += '<path d="M10 34 Q10 11 29 11 Q48 11 48 34 Q41 48 29 48 Q17 48 10 34 Z"' + hf;
-  if (k.eyes === 1) s += '<path d="M18 29 Q29 24 40 29 Q29 34 18 29 Z" fill="#eaffff" stroke="' + neon + '" stroke-width="1.2"/><circle cx="29" cy="29" r="1.8" fill="' + ink + '"/>';
-  else {
-    var ex = k.eyes === 2 ? [[22, 12], [36, -12]] : [[19, 14], [29, 0], [39, -14]];
-    ex.forEach(function (e) { var cy = e[1] === 0 ? 24 : 30; s += '<ellipse cx="' + e[0] + '" cy="' + cy + '" rx="4.6" ry="2" transform="rotate(' + e[1] + ' ' + e[0] + ' ' + cy + ')" fill="#eaffff" stroke="' + neon + '" stroke-width="1.1"/>'; });
-  }
-  s += '<path d="M25 41 h8 M26.5 44 h5" stroke="rgba(4,6,16,.7)" stroke-width="1.3" stroke-linecap="round"/>';
-  s += '<path d="M17 22 Q20 15 27 13" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2" stroke-linecap="round"/>';
-  return s + "</svg>";
-}
-
-/* ================= UI (paint mode) ================= */
-var tier = Math.max(1, Math.min(3, loadJSON("tpbq_tier3") || 1));
-var round = null, phase = "idle", drag = null, lastT = 0, lastSecShown = -1, cdToken = 0;
-var planetEl = $("planet"), pctx = planetEl.getContext("2d"), ghostEl = $("ghost"), gctx = ghostEl.getContext("2d");
-var brush = 1, paint = null, P = null, builtKey = "", lastHiss = 0;
-var PALETTE = [1, 2, 3, 4, 5, 6, 0];
-
-/* ----- planet = GRID x GRID squares, drawn as three stacked layers:
-   base (empty squares) / paint (one terrain tile per square, taken straight from the scoring grid) / over (grid lines + outline).
-   A square's pixels change only when that square's terrain changes. ----- */
-var baseC = document.createElement("canvas"), overC = document.createElement("canvas"), TEXP = [], LY = null;
-function buildLayers() { // call when the grid (size / shape) or the screen changes
-  var g = round.grid, G = g.G, S = Math.max(1, Math.round(L.Dp / G)), N = G * S, key = G + ":" + S + ":" + texKey, id, i, x, y, xg, yg;
-  if (!LY || LY.key !== key) {
-    var src = Math.round(L.D * L.dpr);
-    for (id = 1; id <= 6; id++) {
-      var c = document.createElement("canvas"); c.width = c.height = N;
-      c.getContext("2d").drawImage(TEX[id], 0, 0, Math.min(src, TEX[id].width), Math.min(src, TEX[id].height), 0, 0, N, N); TEXP[id] = c;
-    }
-    baseC.width = baseC.height = overC.width = overC.height = paintC.width = paintC.height = planetEl.width = planetEl.height = N;
-    LY = { key: key, G: G, S: S, N: N };
-  }
-  var b = baseC.getContext("2d"), o = overC.getContext("2d"), lw = Math.max(2, Math.round(S * 0.16));
-  b.clearRect(0, 0, N, N); o.clearRect(0, 0, N, N);
-  var pst = POSTER(); if (pst) lw = Math.max(lw, Math.round(2.5 * L.dpr));
-  b.fillStyle = pst ? "#0f272c" : "#0a1030"; o.fillStyle = pst ? "rgba(244,230,200,.10)" : "rgba(255,255,255,.11)";
-  for (i = 0; i < G * G; i++) if (g.inside[i]) {
-    x = (i % G) * S; y = ((i / G) | 0) * S; b.fillRect(x, y, S, S);
-    if (S >= 4) { o.fillRect(x, y, S, 1); o.fillRect(x, y, 1, S); }
-  }
-  o.fillStyle = pst ? "#f4e6c8" : "rgba(160,235,255,.95)";
-  for (i = 0; i < G * G; i++) if (g.inside[i]) {
-    xg = i % G; yg = (i / G) | 0; x = xg * S; y = yg * S;
-    if (yg === 0 || !g.inside[i - G]) o.fillRect(x, y, S, lw);
-    if (yg === G - 1 || !g.inside[i + G]) o.fillRect(x, y + S - lw, S, lw);
-    if (xg === 0 || !g.inside[i - 1]) o.fillRect(x, y, lw, S);
-    if (xg === G - 1 || !g.inside[i + 1]) o.fillRect(x + S - lw, y, lw, S);
-  }
-  paintCells(null, g.cells);
-}
-function paintCells(list, cells) { // list = changed square indices, or null to redraw every square
-  var G = LY.G, S = LY.S, x = paintC.getContext("2d"), n = list ? list.length : cells.length, k, i, id, px, py;
-  if (!list) x.clearRect(0, 0, LY.N, LY.N);
-  for (k = 0; k < n; k++) {
-    i = list ? list[k] : k; id = cells[i];
-    if (!id) { if (list) x.clearRect((i % G) * S, ((i / G) | 0) * S, S, S); continue; }
-    px = (i % G) * S; py = ((i / G) | 0) * S;
-    x.drawImage(TEXP[id], px, py, S, S, px, py, S, S);
-  }
-}
-function composeTo(ctx, px) {
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, px, px);
-  ctx.drawImage(baseC, 0, 0, px, px); ctx.drawImage(paintC, 0, 0, px, px); ctx.drawImage(overC, 0, 0, px, px);
-}
-function renderPlanet() {
-  composeTo(pctx, LY.N);
-  if (CONFIG.debugLivePct) {
-    var cn = countGrid(round.grid);
-    $("debug").textContent = cn.map(function (v, t) { return TERRAINS[t].name.slice(0, 2) + " " + pctOf(v, round.grid.total); }).join("  ");
-  } else $("debug").textContent = "";
-}
-function snapshot() {
-  var c = document.createElement("canvas"), px = Math.round(110 * L.dpr); c.width = c.height = px;
-  composeTo(c.getContext("2d"), px); return c;
-}
-
-function layout() {
-  if (paint) { pendingLayout = true; return; }
-  pendingLayout = false;
-  var dpr = Math.min(3, window.devicePixelRatio || 1), vw = window.innerWidth, vh = window.innerHeight, inGame = $("game").classList.contains("on");
-  ghostEl.width = Math.round(vw * dpr); ghostEl.height = Math.round(vh * dpr); ghostEl.style.width = vw + "px"; ghostEl.style.height = vh + "px";
-  var D = Math.round(vw * CONFIG.canvasDiameterPct / 100), shrunk = false;
-  if (inGame) { var avail = $("mid").clientHeight - 30; if (avail > 60 && D > avail) { D = avail; shrunk = true; } }
-  var tw = Math.max(28, Math.min(56, Math.floor((vw - 16 - 46 - 5 * 7) / 7))), th = Math.round(tw * 1.5);
-  var changed = !L || L.vw !== vw || L.vh !== vh || L.dpr !== dpr || L.art !== CONFIG.artStyle;
-  L = { dpr: dpr, vw: vw, vh: vh, D: D, Dp: Math.round(D * dpr), cw: 0, ch: 0, cwPx: D * 0.36, chPx: D * 0.54, hw: tw, hh: th, shrunk: shrunk, art: CONFIG.artStyle };
-  if (changed) drawSpace();
-  buildTextures();
-  $("planetWrap").style.width = $("planetWrap").style.height = D + "px";
-  if (round && inGame) {
-    buildLayers();
-    var k = tw + ":" + th + ":" + dpr + ":" + texKey;
-    if (k !== builtKey) { buildPalette(); builtKey = k; }
-    renderPlanet(); fitOrder();
-  }
-  drawHero();
-}
-function drawHero() { // little demo planet on the start screen, drawn the same square-by-square way
-  var c = $("hero"), S = Math.min(120, Math.round(L.vh * 0.16)), G = 20, cs = Math.max(2, Math.round(S * L.dpr / G)), px = G * cs, x = c.getContext("2d"), i, u, v, id;
-  c.style.width = c.style.height = S + "px"; c.width = c.height = px;
-  var g = makeGrid(G, "circle"), src = Math.min(TEX[1].width, Math.round(L.D * L.dpr)), k = src / px;
-  for (i = 0; i < G * G; i++) if (g.inside[i]) {
-    u = ((i % G) + 0.5 - G / 2) / (G / 2); v = (((i / G) | 0) + 0.5 - G / 2) / (G / 2);
-    id = disc(u, v, -0.35, -0.3, 0.5) ? 1 : disc(u, v, 0.45, 0.05, 0.42) ? 2 : disc(u, v, -0.15, 0.6, 0.42) ? 5 : disc(u, v, 0.5, -0.6, 0.32) ? 6 : disc(u, v, -0.75, 0.25, 0.25) ? 4 : 3;
-    var X = (i % G) * cs, Y = ((i / G) | 0) * cs;
-    x.drawImage(TEX[id], X * k, Y * k, cs * k, cs * k, X, Y, cs, cs);
-    x.fillStyle = "rgba(255,255,255,.12)"; x.fillRect(X, Y, cs, 1); x.fillRect(X, Y, 1, cs);
-  }
-}
-
-/* ----- palette: 6 terrains + erase. Tap one to load the brush. ----- */
-function buildPalette() {
-  var h = $("hand"), d = L.dpr; h.innerHTML = "";
-  PALETTE.forEach(function (id) {
-    var s = document.createElement("div"); s.className = "tile"; s.style.width = L.hw + "px"; s.style.height = L.hh + "px"; s.setAttribute("data-id", id);
-    var c = document.createElement("canvas"); c.width = Math.round((L.hw + 20) * d); c.height = Math.round((L.hh + 20) * d);
-    c.style.width = (L.hw + 20) + "px"; c.style.height = (L.hh + 20) + "px";
-    var x = c.getContext("2d"); x.setTransform(d, 0, 0, d, c.width / 2, c.height / 2); drawCard(x, id, L.hw, L.hh, 1, true);
-    var lab = document.createElement("span"); lab.textContent = id === 0 ? "ERASE" : TERRAINS[id].name;
-    s.appendChild(c); s.appendChild(lab); h.appendChild(s);
-    s.addEventListener("pointerdown", function (e) { e.preventDefault(); selectBrush(id, true); });
-  });
-  selectBrush(brush, false);
-}
-function selectBrush(id, sound) {
-  brush = id;
-  var tiles = $("hand").children, i, col = TCOL[id];
-  for (i = 0; i < tiles.length; i++) tiles[i].classList.toggle("sel", +tiles[i].getAttribute("data-id") === id);
-  var c = $("brushCan"), d = L.dpr, px = Math.round(60 * d), x = c.getContext("2d");
-  c.width = c.height = px;
-  x.save(); x.beginPath(); x.arc(px / 2, px / 2, px / 2, 0, 7); x.clip(); x.drawImage(TEX[id], 0, 0, px, px, 0, 0, px, px); x.restore();
-  c.style.borderColor = col; c.style.boxShadow = "0 0 18px " + col;
-  $("brushName").textContent = id === 0 ? "ERASE" : TERRAINS[id].name; $("brushName").style.color = col;
-  if (sound) AudioSys.sfx("pickup");
-}
-
-/* ----- flow ----- */
-function shipped() { // no grade shown mid-round: results wait for the end-of-round review
-  var f = $("flash");
-  f.innerHTML = "<small>" + round.results[round.results.length - 1].order.planet.toUpperCase() + " SHIPPED</small>";
-  f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
-}
-function startRound() {
-  AudioSys.init();
-  sanitizeConfig();
-  round = createPaintRound(CONFIG, tier, makeRng((Date.now() ^ (Math.random() * 1e9)) >>> 0));
-  paint = null; lastSecShown = -1; builtKey = ""; LY = null;
-  show("game");
-  $("skip").classList.toggle("off", !CONFIG.skipEnabled);
-  $("fly").style.display = "none"; $("flash").classList.remove("go");
-  layout(); updateOrderUI(false); updateTimer();
-  var my = ++cdToken;
-  if (CONFIG.countdown) {
-    phase = "countdown"; AudioSys.music(null);
-    var cd = $("cd"); cd.style.display = "flex";
-    var n = 3;
-    (function stepCd() {
-      if (my !== cdToken) return;
-      if (n > 0) { cd.textContent = n; AudioSys.sfx("beep"); n--; setTimeout(stepCd, 600); }
-      else { cd.style.display = "none"; go(); }
-    })();
-  } else { $("cd").style.display = "none"; go(); }
-}
-function go() {
-  phase = "play"; lastT = performance.now(); lastSecShown = -1;
-  AudioSys.sfx("go"); AudioSys.sfx("chatter"); AudioSys.music("game"); updateTimer();
-}
-function endRound() {
-  if (phase !== "play") return;
-  phase = "over"; paint = null; lastSecShown = -1; updateTimer();
-  AudioSys.music(null); AudioSys.sfx("end");
-  var my = ++cdToken;
-  setTimeout(function () { if (my === cdToken) showRecap(); }, 1000);
-}
-function doSkip() {
-  if (phase !== "play") return;
-  paint = null;
-  if (!roundSkip(round)) return;
-  AudioSys.sfx("skip"); setTimeout(function () { AudioSys.sfx("chatter"); }, 380);
-  buildLayers(); renderPlanet(); updateOrderUI(true);
-  if (round.over) endRound();
-}
-
-/* ----- input: press and hold on the planet to spray; release to stop ----- */
-(function () {
-  var mid = $("mid");
-  mid.addEventListener("pointerdown", function (e) {
-    e.preventDefault();
-    if (phase !== "play" || paint) return;
-    try { mid.setPointerCapture(e.pointerId); } catch (err) { }
-    paint = { id: e.pointerId, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, rect: planetEl.getBoundingClientRect() };
-  });
-  mid.addEventListener("pointermove", function (e) { if (paint && e.pointerId === paint.id) { paint.x = e.clientX; paint.y = e.clientY; } });
-  function stop(e) {
-    if (!paint || e.pointerId !== paint.id) return;
-    try { mid.releasePointerCapture(e.pointerId); } catch (err) { }
-    paint = null; if (pendingLayout) layout();
-  }
-  mid.addEventListener("pointerup", stop); mid.addEventListener("pointercancel", stop);
-})();
-function doSpray(now) {
-  var r = paint.rect, G = round.grid.G, cell = r.width / G, rad = G / 2 * CONFIG.brushRadiusPct / 100, off = CONFIG.brushOffsetY;
-  var ax = (paint.lx - r.left) / cell, ay = (paint.ly - off - r.top) / cell, bx = (paint.x - r.left) / cell, by = (paint.y - off - r.top) / cell;
-  var dist = Math.sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay)), steps = Math.max(1, Math.ceil(dist / Math.max(0.5, rad * 0.4))), changed = [], s, c, k;
-  for (s = 1; s <= steps; s++) { c = paintSpray(round, ax + (bx - ax) * s / steps, ay + (by - ay) * s / steps, rad, brush); for (k = 0; k < c.length; k++) changed.push(c[k]); }
-  paint.lx = paint.x; paint.ly = paint.y;
-  if (!changed.length) return;
-  if (now - lastHiss > 90) { lastHiss = now; AudioSys.sfx(brush === 0 ? "rot" : "spray", 3); }
-  paintCells(changed, round.grid.cells);
-  var fin = paintFinishIfDone(round);
-  if (fin) { // every square is filled: ship it (no grade until the end of the round) and bring in the next customer's planet
-    paintCells(null, fin.cells); renderPlanet(); fin.pic = snapshot(); flyOff(fin.pic);
-    buildLayers(); paint = null;
-    shipped(); AudioSys.sfx("ship"); updateOrderUI(true);
-    setTimeout(function () { AudioSys.sfx("chatter"); }, 420);
-  }
-  renderPlanet();
-}
-function drawCursor() {
-  var d = L ? L.dpr : 1;
-  gctx.setTransform(1, 0, 0, 1, 0, 0); gctx.clearRect(0, 0, ghostEl.width, ghostEl.height);
-  if (!paint || !L || phase !== "play") return;
-  var rad = paint.rect.width / 2 * CONFIG.brushRadiusPct / 100, x = paint.x, y = paint.y - CONFIG.brushOffsetY;
-  gctx.setTransform(d, 0, 0, d, 0, 0);
-  gctx.strokeStyle = "rgba(5,6,15,.8)"; gctx.lineWidth = 4; gctx.beginPath(); gctx.arc(x, y, rad, 0, 7); gctx.stroke();
-  gctx.strokeStyle = TCOL[brush]; gctx.lineWidth = 2; gctx.beginPath(); gctx.arc(x, y, rad, 0, 7); gctx.stroke();
-}
-function frame(now) {
-  var dt = Math.min(0.25, Math.max(0, (now - lastT) / 1000)); lastT = now;
-  if (phase === "play") {
-    roundTick(round, dt);
-    if (paint && !round.over) doSpray(now);
-    updateTimer();
-    if (round.over) endRound();
-  }
-  drawCursor();
-  requestAnimationFrame(frame);
-}
-
-/* ----- end of round: how you did overall, then the planet-by-planet detail ----- */
-function miniPlanet(pic) {
-  var c = document.createElement("canvas"); c.width = pic.width; c.height = pic.height; c.style.width = c.style.height = "84px";
-  c.getContext("2d").drawImage(pic, 0, 0); return c;
-}
-function showRecap() {
-  var sum = summarizeRound(round), body = $("recapBody");
-  var hist = loadJSON("tpbq_hist_paint"); if (!Array.isArray(hist)) hist = [];
-  var dnow = new Date();
-  hist.unshift({ t: (dnow.getMonth() + 1) + "/" + dnow.getDate() + " " + dnow.getHours() + ":" + ("0" + dnow.getMinutes()).slice(-2), tier: sum.tier, total: sum.total, grade: sum.overall, planets: sum.planets, skipped: sum.skipped });
-  hist = hist.slice(0, 10); saveJSON("tpbq_hist_paint", hist);
-  body.innerHTML = "";
-  var top = document.createElement("div");
-  top.innerHTML = '<div id="totals"><div class="lbl">ROUND SCORE</div><div class="big">' + sum.total + ' MC</div><div class="og">OVERALL GRADE <b>' + sum.overall + '</b></div>' +
-    '<div class="sm">planet pay ' + sum.payments + " MC &nbsp;" + (sum.bonus >= 0 ? "+" : "&minus;") + " " + Math.abs(sum.bonus) + ' MC grade bonus</div></div>';
-  body.appendChild(top);
-  if (!round.results.length) {
-    var none = document.createElement("div"); none.className = "pcard"; none.style.fontSize = "17px";
-    none.textContent = "No planets finished. Legal has been notified. (Unfinished planets earn nothing.)";
-    body.appendChild(none);
-  }
-  round.results.forEach(function (p, i) {
-    var el = document.createElement("div"); el.className = "pcard";
-    el.appendChild(miniPlanet(p.pic));
-    var t = '<div class="pname">' + p.order.planet + '<small>for ' + p.order.name + '</small></div><table><tr><td>#' + (i + 1) + '</td><td class="n">want</td><td class="n">got</td><td class="n">diff</td></tr>';
-    p.rows.forEach(function (r) { t += '<tr><td style="color:' + (r.terrain === ANY ? TCOL[0] : TCOL[r.terrain]) + '">' + tname(r.terrain) + '</td><td class="n">' + r.target + '%</td><td class="n">' + r.actual + '%</td><td class="n">' + r.err + "</td></tr>"; });
-    t += '<tr><td colspan="3">SUM DIFF</td><td class="n">' + p.S + '</td></tr><tr><td colspan="4">base ' + p.basePay + " &rarr; paid " + p.paid + " MC &middot; " + p.seconds.toFixed(1) + "s</td></tr></table>";
-    var w = document.createElement("div"); w.style.flex = "1"; w.innerHTML = t; el.appendChild(w);
-    var g = document.createElement("div"); g.className = "pg"; g.innerHTML = p.grade + "<small>GRADE</small>"; el.appendChild(g);
-    body.appendChild(el);
-  });
-  var rest = document.createElement("div");
-  rest.innerHTML =
-    '<div class="stats">planets finished: ' + sum.planets + " &middot; skipped: " + sum.skipped +
-    "<br>avg seconds / planet: " + (sum.planets ? sum.avgSeconds.toFixed(1) : "-") + " &middot; " + (sum.tier + 2) + " terrains per order" + (CONFIG.randomShapes ? " &middot; random shapes" : "") + "</div>" +
-    '<div class="rbtns"><button id="rcReplay" class="pri">REPLAY (' + (tier + 2) + ' TERRAINS)</button><button id="rcTier">MAIN MENU</button></div>' +
-    '<div class="rbtns"><button id="rcSet" class="small">&#9881; SETTINGS</button><button id="rcMute" class="small"></button></div>' +
-    '<div class="hist">LAST ' + hist.length + " ROUNDS<br>" + hist.map(function (h) {
-      return h.t + " &middot; " + (h.tier + 2) + "T &middot; " + h.total + " MC &middot; " + h.grade + " &middot; " + h.planets + " planets, " + h.skipped + " skipped";
-    }).join("<br>") + "</div>";
-  body.appendChild(rest); body.scrollTop = 0;
-  $("rcReplay").onclick = function () { AudioSys.sfx("tap"); startRound(); };
-  $("rcTier").onclick = function () { AudioSys.sfx("tap"); toStart(); };
-  $("rcSet").onclick = function () { AudioSys.sfx("tap"); openSettings("recap"); };
-  $("rcMute").onclick = function () { AudioSys.toggleMute(); muteLabels(); };
-  muteLabels();
-  phase = "recap"; show("recap");
-  var og = overallGrade(round.results.map(function (p) { return p.gi; }), CONFIG);
-  AudioSys.sfx("grade", og ? og.gi : 5);
-  AudioSys.music("recap");
-}
-
-/* ----- start screen / settings ----- */
-var STYLE_IDS = ["lofi", "orch", "wave", "chip"], STYLE_NAMES = { lofi: "LO-FI", orch: "ORCHESTRAL", wave: "SYNTHWAVE", chip: "CHIPTUNE", poster: "INKED POSTER", classic: "CLASSIC NEON" };
-var SETTINGS = [
-  ["artStyle", "Art style", ["poster", "classic"]],
-  ["roundSeconds", "Round seconds"],
-  ["GRID", "Planet grid: squares across", [25, 50, 75, 100]], ["GRID", "Planet grid: custom (8-200)"],
-  ["canvasDiameterPct", "Planet size % of screen width"], ["brushRadiusPct", "Brush size % of planet"],
-  ["randomShapes", "Random planet shapes"], ["minTargetPct", "Min target %"], ["maxTargetPct", "Max target %"],
-  ["musicStyle", "Music style", STYLE_IDS],
-  ["paintFinishPct", "Planet auto-finishes at % filled"], ["brushOffsetY", "Brush lands px above finger"],
-  ["gradeMaxSum", "gradeMaxSum S,A,B,C,D"], ["payPct", "payPct S..F"], ["bonusMC", "bonusMC S..F"], ["payRanges", "Pay ranges for 3 / 4 / 5 terrains (lo-hi)"],
-  ["skipEnabled", "Skip enabled"], ["skipPenaltySec", "Skip time penalty sec"], ["debugLivePct", "Debug live % readout"], ["countdown", "3-2-1 countdown"],
-  ["musicVolume", "Music volume 0-100"], ["sfxVolume", "SFX volume 0-100"]
-];
-var settingsFrom = "start";
-function buildTiers() {
-  var box = $("tiers"); box.innerHTML = "";
-  for (var i = 1; i <= 3; i++) (function (t) {
-    var b = document.createElement("button"); b.textContent = t + 2; if (t === tier) b.className = "sel";
-    b.onclick = function () { AudioSys.init(); AudioSys.music("title"); AudioSys.sfx("tap"); tier = t; saveJSON("tpbq_tier3", t); buildTiers(); };
-    box.appendChild(b);
-  })(i);
-  var pr = CONFIG.payRanges[tier - 1];
-  $("tierDesc").textContent = (tier + 2) + " terrains per planet · pays " + pr[0] + "-" + pr[1] + " MC";
-}
-function optLabels() {
-  $("shapeBtn").textContent = "SHAPES: " + (CONFIG.randomShapes ? "RANDOM" : "CIRCLE"); $("shapeBtn").classList.toggle("on", !!CONFIG.randomShapes);
-  $("musicBtn").textContent = "MUSIC: " + STYLE_NAMES[CONFIG.musicStyle];
-}
-function buildSettings() {
-  var box = $("setRows"); box.innerHTML = "";
-  SETTINGS.forEach(function (s) {
-    var k = s[0], row = document.createElement("div"); row.className = "srow";
-    var lab = document.createElement("label"); lab.textContent = s[1];
-    var wrap = document.createElement("div"), inp;
-    if (s[2]) { // pick-one buttons
-      wrap.className = "choice";
-      s[2].forEach(function (opt) {
-        var b = document.createElement("button"); b.textContent = STYLE_NAMES[opt] || opt; if (CONFIG[k] === opt) b.className = "sel";
-        b.onclick = function () { CONFIG[k] = opt; sanitizeConfig(); saveJSON("tpbq_cfg_main2", CONFIG); if (k === "musicStyle") AudioSys.restyle(); if (k === "artStyle") applyArt(); AudioSys.sfx("tap"); buildSettings(); };
-        wrap.appendChild(b);
-      });
-    } else if (typeof CONFIG_DEFAULTS[k] === "boolean") {
-      inp = document.createElement("input"); inp.type = "checkbox"; inp.checked = CONFIG[k];
-      inp.onchange = function () { CONFIG[k] = inp.checked; saveJSON("tpbq_cfg_main2", CONFIG); };
-      wrap.appendChild(inp);
-    } else {
-      inp = document.createElement("input"); inp.type = "text"; inp.value = fmt(k); inp.autocomplete = "off";
-      if (!Array.isArray(CONFIG_DEFAULTS[k])) inp.inputMode = "decimal";
-      inp.onchange = function () {
-        var v = parseSetting(k, inp.value);
-        if (v !== undefined) { CONFIG[k] = v; sanitizeConfig(); saveJSON("tpbq_cfg_main2", CONFIG); AudioSys.applyVolumes(); }
-        if (k === "GRID") buildSettings(); else inp.value = fmt(k);
-      };
-      wrap.appendChild(inp);
-    }
-    row.appendChild(lab); row.appendChild(wrap); box.appendChild(row);
-  });
-}
-function show(id) {
-  ["start", "game", "recap", "settings"].forEach(function (s) { $(s).classList.toggle("on", s === id); });
-}
-function fitOrder() {
-  var el = $("orderText"), b = $("bubble"), W = b.clientWidth - 22, H = b.clientHeight - 14, n = round.queue[0].slots.length;
-  var size = Math.min(68, Math.floor(H / n / (POSTER() ? 1.18 : 1.02)));
-  el.style.fontSize = size + "px";
-  while (size > 12 && (el.scrollWidth > W || el.offsetHeight > H)) { size--; el.style.fontSize = size + "px"; }
-}
-function updateOrderUI(slide) {
-  var a = round.queue[0], n = round.queue[1];
-  $("svgActive").innerHTML = alienSVG(a, "a"); $("svgNext").innerHTML = alienSVG(n, "n");
-  $("custName").textContent = a.name;
-  $("payActive").textContent = a.basePay + " MC"; $("payNext").textContent = n.basePay + " MC";
-  $("orderText").innerHTML = a.slots.map(function (s) {
-    return '<div class="oline">' + chip(s.terrain) + '<span class="pc">' + s.pct + '%</span><span class="nm" style="color:' + (s.terrain === ANY ? TCOL[0] : TCOL[s.terrain]) + '">' + tname(s.terrain) + "</span></div>";
-  }).join("");
-  fitOrder();
-  if (slide) { var el = $("aliens"); el.classList.remove("slide"); void el.offsetWidth; el.classList.add("slide"); }
-}
-function updateTimer() {
-  var s = Math.ceil(round.timeLeft - 1e-6);
-  if (s === lastSecShown) return;
-  lastSecShown = s;
-  var m = Math.floor(s / 60), ss = s % 60;
-  $("timer").textContent = (m < 10 ? "0" : "") + m + ":" + (ss < 10 ? "0" : "") + ss;
-  $("timer").classList.toggle("low", s <= 5 && phase === "play");
-  if (phase === "play") {
-    if (s <= 5 && s > 0) AudioSys.sfx("tick");
-    AudioSys.setTempo(s <= 10 ? 1.18 : 1);
-  }
-}
-function flyOff(pic) { // finished planet is shipped to the client
-  var f = $("fly"), pr = planetEl.getBoundingClientRect(), mr = $("mid").getBoundingClientRect(), ar = $("svgActive").getBoundingClientRect();
-  f.width = f.height = pic.width; f.style.width = f.style.height = L.D + "px";
-  f.getContext("2d").drawImage(pic, 0, 0);
-  f.style.transition = "none"; f.style.transform = "translate(" + (pr.left - mr.left) + "px," + (pr.top - mr.top) + "px)"; f.style.opacity = 1; f.style.display = "block";
-  void f.offsetWidth;
-  f.style.transition = "transform .5s cubic-bezier(.5,-0.3,.8,.4), opacity .5s ease-in";
-  f.style.transform = "translate(" + (ar.left + ar.width / 2 - mr.left - L.D / 2) + "px," + (ar.top - mr.top - L.D / 2) + "px) scale(.08)";
-  f.style.opacity = 0.3;
-  setTimeout(function () { f.style.display = "none"; }, 530);
-}
-function toStart() { phase = "idle"; show("start"); AudioSys.music("title"); }
-function muteLabels() {
-  var t = AudioSys.isMuted() ? "SOUND OFF" : "SOUND ON";
-  $("muteBtn").textContent = t; if ($("rcMute")) $("rcMute").textContent = t;
-}
-function fmt(k) {
-  var v = CONFIG[k];
-  if (k === "payRanges") return v.map(function (r) { return r[0] + "-" + r[1]; }).join(", ");
-  return Array.isArray(v) ? v.join(", ") : String(v);
-}
-function parseSetting(k, str) {
-  var def = CONFIG_DEFAULTS[k], out;
-  if (k === "payRanges") {
-    out = str.split(",").map(function (p) { var m = /^\s*(-?\d+)\s*-\s*(-?\d+)\s*$/.exec(p); return m ? [+m[1], +m[2]] : null; });
-    return out.length === def.length && out.every(function (r) { return r && r[0] <= r[1]; }) ? out : undefined;
-  }
-  if (Array.isArray(def)) {
-    out = str.split(",").map(function (p) { return parseFloat(p); });
-    return out.length === def.length && out.every(isFinite) ? out : undefined;
-  }
-  out = parseFloat(str); return isFinite(out) ? out : undefined;
-}
-function openSettings(from) { settingsFrom = from; buildSettings(); show("settings"); }
-
-$("playBtn").onclick = function () { AudioSys.init(); startRound(); };
-$("gearBtn").onclick = function () { AudioSys.init(); AudioSys.music("title"); AudioSys.sfx("tap"); openSettings("start"); };
-$("muteBtn").onclick = function () { AudioSys.init(); AudioSys.toggleMute(); AudioSys.music("title"); muteLabels(); };
-$("skip").addEventListener("pointerdown", function (e) { e.preventDefault(); e.stopPropagation(); doSkip(); });
-$("version").textContent = VERSION;
-$("shapeBtn").onclick = function () { AudioSys.init(); AudioSys.music("title"); AudioSys.sfx("tap"); CONFIG.randomShapes = !CONFIG.randomShapes; saveJSON("tpbq_cfg_main2", CONFIG); optLabels(); };
-$("musicBtn").onclick = function () {
-  AudioSys.init(); var i = STYLE_IDS.indexOf(CONFIG.musicStyle); CONFIG.musicStyle = STYLE_IDS[(i + 1) % STYLE_IDS.length]; saveJSON("tpbq_cfg_main2", CONFIG);
-  optLabels(); AudioSys.music("title"); AudioSys.restyle();
-};
-$("setClose").onclick = function () {
-  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-  AudioSys.sfx("tap"); buildTiers(); optLabels(); show(settingsFrom); layout();
-};
-$("setReset").onclick = function () { CONFIG = clone(CONFIG_DEFAULTS); saveJSON("tpbq_cfg_main2", CONFIG); AudioSys.applyVolumes(); AudioSys.restyle(); applyArt(); buildSettings(); AudioSys.sfx("bonk"); };
-
-/* ----- global guards ----- */
-document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
-document.addEventListener("gesturestart", function (e) { e.preventDefault(); });
-$("game").addEventListener("touchmove", function (e) { e.preventDefault(); }, { passive: false });
-$("start").addEventListener("touchmove", function (e) { e.preventDefault(); }, { passive: false });
-document.addEventListener("dblclick", function (e) { e.preventDefault(); });
-window.addEventListener("resize", layout);
-window.addEventListener("orientationchange", function () { setTimeout(layout, 250); });
-
-document.body.classList.toggle("poster", POSTER());
-buildTiers(); optLabels(); muteLabels(); layout();
-requestAnimationFrame(function (t) { lastT = t; requestAnimationFrame(frame); });
-</script>
+<script src="js/logic.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/art.js"></script>
+<script src="js/ui.js"></script>
 </body>
 </html>
