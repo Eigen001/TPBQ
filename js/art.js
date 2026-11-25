@@ -354,3 +354,67 @@ function drawSolar(cv, sys, t, sel) {
   if (!n) { x.font = "700 11px " + ff; x.fillText("(no planets)", cx, h - 10); }
 }
 function solarHit(sys, px, py) { var best = -1, bd = 30 * 30; sys.planets.forEach(function (p, i) { var q = (p.x - px) * (p.x - px) + (p.y - py) * (p.y - py); if (q < bd) { bd = q; best = i; } }); return best; }
+
+/* ----- v1.1: mixing well, store icons, galaxy intro art, tutorial demo planet ----- */
+function drawWell(x, id, w, h) { // a stone basin holding a pool of terrain (or empty water), centred on the origin
+  var r = Math.min(w * 0.5, h * 0.4), cy = -h * 0.04, pst = POSTER(), rim = pst ? "#f4e6c8" : "#aab3d1", ink = pst ? PINK : INK, k;
+  x.save();
+  x.fillStyle = "rgba(0,0,0,.4)"; x.beginPath(); x.ellipse(3, cy + 4, r, r, 0, 0, 7); x.fill();
+  x.fillStyle = pst ? "#8a5442" : "#4d5678"; x.fillRect(-r * 0.45, cy + r * 0.6, r * 0.9, h * 0.5 - r * 0.6 - cy); // pedestal
+  x.strokeStyle = ink; x.lineWidth = 1.5; x.strokeRect(-r * 0.45, cy + r * 0.6, r * 0.9, h * 0.5 - r * 0.6 - cy);
+  x.fillStyle = rim; x.beginPath(); x.arc(0, cy, r, 0, 7); x.fill(); x.lineWidth = 2; x.stroke();
+  var pr = r * 0.74; x.save(); x.beginPath(); x.arc(0, cy, pr, 0, 7); x.clip();
+  if (id) texDraw(x, id, 0, 0, 140, 140, -pr, cy - pr, pr * 2, pr * 2);
+  else {
+    x.fillStyle = pst ? "#24525b" : "#1a2150"; x.fillRect(-pr, cy - pr, pr * 2, pr * 2);
+    x.strokeStyle = "rgba(244,230,200,.45)"; x.lineWidth = 1.2;
+    for (k = 1; k <= 2; k++) { x.beginPath(); x.ellipse(0, cy, pr * 0.32 * k, pr * 0.14 * k, 0, 0, 7); x.stroke(); }
+  }
+  x.fillStyle = "rgba(255,255,255,.18)"; x.beginPath(); x.ellipse(-pr * 0.35, cy - pr * 0.45, pr * 0.42, pr * 0.16, -0.5, 0, 7); x.fill();
+  x.restore();
+  x.strokeStyle = ink; x.lineWidth = 1.6; x.beginPath(); x.arc(0, cy, pr, 0, 7); x.stroke();
+  for (k = 0; k < 8; k++) { var a = k / 8 * 6.283; x.beginPath(); x.moveTo(Math.cos(a) * pr, cy + Math.sin(a) * pr); x.lineTo(Math.cos(a) * r, cy + Math.sin(a) * r); x.lineWidth = 1; x.stroke(); }
+  x.restore();
+}
+var STORE_ICONS = {
+  brush: '<path d="M20 3l-9 9 2 2 9-9z" fill="#f2b33d"/><path d="M11 12c-3 0-5 2-5 5 0 2-2 3-3 3 3 2 9 1 10-4z" fill="#e2622b"/>',
+  time: '<circle cx="12" cy="12" r="9" fill="none" stroke="#f4e6c8" stroke-width="2.4"/><path d="M12 7v5l4 3" stroke="#f2b33d" stroke-width="2.4" fill="none" stroke-linecap="round"/>',
+  peek: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" fill="#f4e6c8"/><circle cx="12" cy="12" r="4" fill="#3aa7a3"/><circle cx="12" cy="12" r="1.8" fill="#17383f"/>',
+  auto: '<path d="M4 20L15 9" stroke="#f4e6c8" stroke-width="2.6" stroke-linecap="round"/><path d="M17 2l1.2 3 3 1.2-3 1.2L17 10.4l-1.2-3-3-1.2 3-1.2z" fill="#f2b33d"/><circle cx="7" cy="5" r="1.4" fill="#f2b33d"/><circle cx="20" cy="15" r="1.4" fill="#f2b33d"/>',
+  steady: '<ellipse cx="12" cy="18" rx="7" ry="2.6" fill="#f2b33d" stroke="#17383f"/><ellipse cx="12" cy="14" rx="7" ry="2.6" fill="#f2b33d" stroke="#17383f"/><ellipse cx="12" cy="10" rx="7" ry="2.6" fill="#f2b33d" stroke="#17383f"/><path d="M12 8.6v2.8" stroke="#17383f" stroke-width="1.5"/>',
+  well2: '<circle cx="8" cy="12" r="6" fill="#f4e6c8"/><circle cx="8" cy="12" r="4" fill="#3aa7a3"/><circle cx="17" cy="12" r="6" fill="#f4e6c8"/><circle cx="17" cy="12" r="4" fill="#e2622b"/>',
+  calm: '<path d="M15 3a9 9 0 1 0 6 14A7 7 0 0 1 15 3z" fill="#f4e6c8"/><path d="M5 21h14" stroke="#3aa7a3" stroke-width="2" stroke-linecap="round"/>',
+  skips: '<path d="M3 5l8 7-8 7zM12 5l8 7-8 7z" fill="#f2b33d"/><path d="M21 5v14" stroke="#f4e6c8" stroke-width="2.4"/>',
+  boost: '<text x="12" y="17" text-anchor="middle" font-size="14" font-weight="900" font-family="Arial Black,Arial" fill="#f2b33d">x2</text><path d="M4 20h16" stroke="#e2622b" stroke-width="2"/>',
+  shield: '<path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z" fill="#3aa7a3" stroke="#f4e6c8" stroke-width="1.8"/><path d="M8 12l3 3 5-6" stroke="#f4e6c8" stroke-width="2.2" fill="none" stroke-linecap="round"/>',
+  shop: '<path d="M3 10h18v11H3z" fill="#f4e6c8"/><path d="M2 4h20l-1 6H3z" fill="#e2622b"/><path d="M7 4v6M12 4v6M17 4v6" stroke="#f4e6c8" stroke-width="1.4"/><path d="M10 21v-6h4v6" fill="#17383f"/>'
+};
+function storeIcon(id) { return '<svg viewBox="0 0 24 24">' + (STORE_ICONS[id] || STORE_ICONS.shop) + "</svg>"; }
+var GAL_COL = { home: ["#3aa7a3", "#f4e6c8"], "bot:hot": ["#e2622b", "#f2b33d"], "bot:chill": ["#8ec4ea", "#ffffff"], "bot:low": ["#2e6ebe", "#46beba"], "bot:high": ["#b8452c", "#f4dca0"],
+  "shapes:basic": ["#f2b33d", "#f4e6c8"], "shapes:suits": ["#d65430", "#f4e6c8"], "shapes:long": ["#a06be0", "#f4e6c8"], size: ["#84ba54", "#f4e6c8"] };
+function drawGalaxyArt(c, info) { // a spiral galaxy in the complication's colours
+  var w = c.clientWidth || 300, h = c.clientHeight || 120, d = L.dpr, x = c.getContext("2d"), r = makeRng(77 + info.g * 13 + (info.comp || "").length), k, a;
+  c.width = Math.round(w * d); c.height = Math.round(h * d); x.scale(d, d);
+  var col = GAL_COL[info.comp || "home"];
+  x.fillStyle = "#17383f"; x.fillRect(0, 0, w, h);
+  x.fillStyle = "#f4e6c8"; for (k = 0; k < 40; k++) star4(x, r() * w, r() * h, 0.6 + r() * 1.4);
+  x.save(); x.translate(w / 2, h / 2); x.scale(1, 0.42); x.rotate(r() * 6);
+  for (var arm = 0; arm < 2; arm++) for (k = 0; k < 140; k++) {
+    a = k / 140 * 9 + arm * Math.PI; var rad = 4 + k * 0.75, s = 1.2 + r() * 2.6 * (1 - k / 160);
+    x.fillStyle = k % 3 ? col[0] : col[1]; x.globalAlpha = 0.9 - k / 220;
+    x.beginPath(); x.arc(Math.cos(a) * rad + (r() - 0.5) * 8, Math.sin(a) * rad + (r() - 0.5) * 8, s, 0, 7); x.fill();
+  }
+  x.globalAlpha = 1; x.fillStyle = col[1]; x.beginPath(); x.arc(0, 0, 9, 0, 7); x.fill();
+  x.restore();
+  x.fillStyle = "#f4e6c8"; x.font = "900 13px sans-serif"; x.textAlign = "left"; x.fillText("GALAXY " + (info.g + 1), 10, h - 10);
+}
+function drawDemoPlanet(c, ids, frac) { // tutorial: a half-painted planet, square by square
+  var G = 20, cs = Math.max(2, Math.round(6 * L.dpr)), px = G * cs, x = c.getContext("2d"), g = makeGrid(G, "circle"), i, n = 0, r = makeRng(3);
+  c.width = c.height = px; c.style.width = c.style.height = (px / L.dpr) + "px";
+  for (i = 0; i < G * G; i++) if (g.inside[i]) {
+    var X = (i % G) * cs, Y = ((i / G) | 0) * cs, u = (i % G) / G, v = ((i / G) | 0) / G;
+    x.fillStyle = POSTER() ? "#0f272c" : "#0a1030"; x.fillRect(X, Y, cs, cs);
+    if (u + v * 0.4 < frac * 1.4 && r() < 0.97) { var id = ids[Math.min(ids.length - 1, Math.floor(v * ids.length))]; texDraw(x, id, X * 4, Y * 4, cs * 4, cs * 4, X, Y, cs, cs); }
+    x.fillStyle = "rgba(255,255,255,.12)"; x.fillRect(X, Y, cs, 1); x.fillRect(X, Y, 1, cs); n++;
+  }
+}

@@ -8,7 +8,8 @@ var META = (function () {
 function saveMeta() { saveJSON("tpbq_meta", META); }
 function validRun(r) {
   return !!r && typeof r === "object" && typeof r.level === "number" && r.level >= 0 && r.level < LEVELS && typeof r.wallet === "number" && typeof r.points === "number" &&
-    r.owned && r.owned.bots && r.owned.mixes && r.items && Array.isArray(r.bossMods) && r.bossMods.length === 3 && !r.over;
+    r.v === 2 && r.owned && r.owned.bots && r.owned.mixes && r.items && Array.isArray(r.bossMods) && r.bossMods.length === GALAXIES &&
+    Array.isArray(r.comps) && Array.isArray(r.galaxies) && !r.over;
 }
 var RUN = (function () { var r = loadJSON("tpbq_run"); return validRun(r) ? r : null; })();
 function saveRun() { if (RUN && !RUN.over) saveJSON("tpbq_run", RUN); else { try { localStorage.removeItem("tpbq_run"); } catch (e) { } } }
@@ -17,7 +18,7 @@ function newSeed() { return (Date.now() ^ (Math.random() * 1e9)) >>> 0; }
 
 var mode = "arcade", spec = null, round = null, phase = "idle", lastT = 0, lastSecShown = -1, cdToken = 0;
 var planetEl = $("planet"), pctx = planetEl.getContext("2d"), ghostEl = $("ghost"), gctx = ghostEl.getContext("2d"), wrapEl = $("planetWrap");
-var brush = 1, botBrush = null, mixOn = false, paint = null, builtKey = "", lastHiss = 0;
+var brush = 1, wells = [0], brushWell = null, lastWell = 0, drag = null, paint = null, builtKey = "", lastHiss = 0;
 var peekUsed = false, peekUntil = -1, hiddenShown = false, spinAng = 0, fogPts = [];
 var sys = null, solarT = 0, solarSel = -1, stockEarned = 0;
 var PALETTE = [1, 2, 3, 4, 5, 6, 0];
@@ -95,14 +96,14 @@ function layout() {
   ghostEl.width = Math.round(vw * dpr); ghostEl.height = Math.round(vh * dpr); ghostEl.style.width = vw + "px"; ghostEl.style.height = vh + "px";
   var D = Math.round(vw * CONFIG.canvasDiameterPct / 100), shrunk = false;
   if (inGame) { var avail = $("mid").clientHeight - 30; if (avail > 60 && D > avail) { D = avail; shrunk = true; } }
-  var tw = Math.max(28, Math.min(56, Math.floor((vw - 16 - 46 - 5 * 7) / 7))), th = Math.round(tw * 1.5);
+  var slots = 7 + (inGame ? nWells() : 1), tw = Math.max(26, Math.min(56, Math.floor((vw - 16 - 46 - 5 * slots) / slots))), th = Math.round(tw * 1.5);
   var changed = !L || L.vw !== vw || L.vh !== vh || L.dpr !== dpr || L.art !== CONFIG.artStyle;
   L = { dpr: dpr, vw: vw, vh: vh, D: D, Dp: Math.round(D * dpr), cw: 0, ch: 0, cwPx: D * 0.36, chPx: D * 0.54, hw: tw, hh: th, shrunk: shrunk, art: CONFIG.artStyle };
   if (changed) drawSpace();
   buildTextures();
   if (round && inGame) {
     buildLayers();
-    var k = tw + ":" + th + ":" + dpr + ":" + texKey;
+    var k = tw + ":" + th + ":" + dpr + ":" + texKey + ":" + nWells();
     if (k !== builtKey) { buildPalette(); builtKey = k; }
     renderPlanet(); fitOrder();
     if (round.mod.fog) drawFog(performance.now());
@@ -122,7 +123,9 @@ function drawHero() { // little demo planet on the start screen, drawn the same 
   }
 }
 
-/* ----- palette: 6 base terrains + erase. Bots sit at the corners, MIX on the right. ----- */
+/* ----- palette: 6 base terrains + erase, then the mixing well(s). Bots sit at the planet corners and act on a well. ----- */
+function activeId() { return brushWell !== null ? wells[brushWell] : brush; } // terrain the brush paints (0 = erase / empty well)
+function nWells() { return spec && spec.wells ? spec.wells : 1; }
 function buildPalette() {
   var h = $("hand"), d = L.dpr; h.innerHTML = "";
   PALETTE.forEach(function (id) {
@@ -132,39 +135,95 @@ function buildPalette() {
     var x = c.getContext("2d"); x.setTransform(d, 0, 0, d, c.width / 2, c.height / 2); drawCard(x, id, L.hw, L.hh, 1, true);
     var lab = document.createElement("span"); lab.textContent = id === 0 ? "ERASE" : TERRAINS[id].name;
     s.appendChild(c); s.appendChild(lab); h.appendChild(s);
-    s.addEventListener("pointerdown", function (e) { e.preventDefault(); if (round && round.locked.indexOf(id) >= 0) { AudioSys.sfx("bonk"); return; } selectBrush(id, true); });
+    s.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
+      if (round && round.locked.indexOf(id) >= 0) { AudioSys.sfx("bonk"); return; }
+      selectBrush(id, true);
+      drag = { id: id, pid: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, on: false };
+    });
   });
-  refreshBrushUI(); refreshLocked();
+  for (var w = 0; w < nWells(); w++) (function (w) {
+    var s = document.createElement("div"); s.className = "tile well"; s.id = "well" + w; s.style.width = L.hw + "px"; s.style.height = L.hh + "px";
+    var c = document.createElement("canvas"); c.width = Math.round((L.hw + 20) * d); c.height = Math.round((L.hh + 20) * d);
+    c.style.width = (L.hw + 20) + "px"; c.style.height = (L.hh + 20) + "px";
+    var lab = document.createElement("span");
+    s.appendChild(c); s.appendChild(lab); h.appendChild(s);
+    s.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
+      if (!wells[w]) { AudioSys.sfx("bonk"); wellHint(); return; }
+      selectWell(w);
+    });
+  })(w);
+  refreshWells(); refreshBrushUI(); refreshLocked();
 }
-function refreshBrushUI() {
-  var tiles = $("hand").children, i, col = botBrush ? BOT_COL[botBrush] : TCOL[brush];
-  for (i = 0; i < tiles.length; i++) tiles[i].classList.toggle("sel", !botBrush && +tiles[i].getAttribute("data-id") === brush);
-  BOTS.forEach(function (b) { $("bot_" + b).classList.toggle("sel", botBrush === b); });
-  $("brush").classList.toggle("isbot", !!botBrush);
-  if (botBrush) { $("brushBot").innerHTML = botSVG(botBrush); $("brushBot").style.color = col; $("brushName").textContent = BOT_NAMES[botBrush]; }
-  else {
-    var c = $("brushCan"), px = Math.round(60 * L.dpr), x = c.getContext("2d");
-    c.width = c.height = px;
-    x.save(); x.beginPath(); x.arc(px / 2, px / 2, px / 2, 0, 7); x.clip(); texDraw(x, brush, 0, 0, px, px, 0, 0, px, px); x.restore();
-    c.style.borderColor = col; c.style.boxShadow = "0 0 18px " + col;
-    $("brushName").textContent = (mixOn && brush ? "MIX " : "") + (brush === 0 ? "ERASE" : TERRAINS[brush].name);
+function refreshWells() {
+  for (var w = 0; w < nWells(); w++) {
+    var el = $("well" + w); if (!el) continue;
+    var c = el.firstChild, d = L.dpr, x = c.getContext("2d");
+    x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, c.width, c.height); x.setTransform(d, 0, 0, d, c.width / 2, c.height / 2);
+    drawWell(x, wells[w], L.hw, L.hh);
+    el.lastChild.textContent = wells[w] ? TERRAINS[wells[w]].name : "WELL";
   }
-  $("brushName").style.color = col;
-  $("mixBtn").classList.toggle("on", mixOn);
 }
-function selectBrush(id, sound) { brush = id; botBrush = null; refreshBrushUI(); if (sound) AudioSys.sfx("pickup"); }
-function selectBot(b) { botBrush = b; refreshBrushUI(); AudioSys.sfx("pickup"); }
+function wellPulse(w) { var el = $("well" + w); if (!el) return; el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse"); }
+function wellHint() { var el = $("flash"); el.innerHTML = "<small>DRAG A TERRAIN INTO THE WELL</small>"; el.classList.remove("go"); void el.offsetWidth; el.classList.add("go"); }
+function dropInWell(w, id) {
+  if (round && round.locked.indexOf(id) >= 0) { AudioSys.sfx("bonk"); return; }
+  var before = wells[w], now = wellDrop(before, id, round.owned);
+  wells[w] = now; lastWell = w; wellPulse(w);
+  AudioSys.sfx(!now ? "erase" : before && now !== id ? "coin" : "drop");
+  if (!now && brushWell === w) selectBrush(1, false);
+  refreshWells(); refreshBrushUI();
+}
+function pressBot(b) {
+  var w = brushWell !== null ? brushWell : lastWell, now = wellBot(wells[w], b, round.owned), el = $("bot_" + b);
+  el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse");
+  if (!now) { AudioSys.sfx("bonk"); if (!wells[w]) wellHint(); return; }
+  wells[w] = now; lastWell = w; wellPulse(w); AudioSys.sfx("coin"); refreshWells(); refreshBrushUI();
+}
+function wellAt(x, y) {
+  for (var w = 0; w < nWells(); w++) { var el = $("well" + w); if (!el) continue; var r = el.getBoundingClientRect(); if (x >= r.left - 12 && x <= r.right + 12 && y >= r.top - 20 && y <= r.bottom + 14) return w; }
+  return -1;
+}
+document.addEventListener("pointermove", function (e) {
+  if (!drag || e.pointerId !== drag.pid) return;
+  drag.x = e.clientX; drag.y = e.clientY;
+  if (!drag.on && Math.abs(drag.x - drag.x0) + Math.abs(drag.y - drag.y0) > 10) drag.on = true;
+});
+function dragEnd(e) {
+  if (!drag || e.pointerId !== drag.pid) return;
+  var d = drag; drag = null;
+  if (!d.on || !round) return;
+  var w = wellAt(e.clientX, e.clientY);
+  if (w >= 0 && (phase === "play" || phase === "countdown")) dropInWell(w, d.id);
+}
+document.addEventListener("pointerup", dragEnd); document.addEventListener("pointercancel", dragEnd);
+function refreshBrushUI() {
+  var tiles = $("hand").children, i, id = activeId(), col = TCOL[id] || "#f4e6c8";
+  for (i = 0; i < tiles.length; i++) {
+    var t = tiles[i], isW = t.classList.contains("well");
+    t.classList.toggle("sel", isW ? brushWell === +t.id.slice(4) : brushWell === null && +t.getAttribute("data-id") === brush);
+  }
+  var c = $("brushCan"), px = Math.round(60 * L.dpr), x = c.getContext("2d");
+  c.width = c.height = px;
+  x.save(); x.beginPath(); x.arc(px / 2, px / 2, px / 2, 0, 7); x.clip(); texDraw(x, id, 0, 0, px, px, 0, 0, px, px); x.restore();
+  c.style.borderColor = col; c.style.boxShadow = "0 0 18px " + col;
+  $("brushName").textContent = (brushWell !== null ? "WELL: " : "") + (id === 0 ? "ERASE" : TERRAINS[id].name);
+  $("brushName").style.color = col;
+}
+function selectBrush(id, sound) { brush = id; brushWell = null; refreshBrushUI(); if (sound) AudioSys.sfx("pickup"); }
+function selectWell(w) { brushWell = w; lastWell = w; refreshBrushUI(); AudioSys.sfx("pickup"); }
 function refreshLocked() {
   var tiles = $("hand").children;
-  for (var i = 0; i < tiles.length; i++) tiles[i].classList.toggle("locked", !!round && round.locked.indexOf(+tiles[i].getAttribute("data-id")) >= 0);
+  for (var i = 0; i < tiles.length; i++) tiles[i].classList.toggle("locked", !!round && !tiles[i].classList.contains("well") && round.locked.indexOf(+tiles[i].getAttribute("data-id")) >= 0);
 }
 function setupTools() { // show only what this round owns
   BOTS.forEach(function (b) { var el = $("bot_" + b); el.classList.toggle("own", !!round.owned.bots[b]); el.innerHTML = botSVG(b); el.style.color = BOT_COL[b]; el.style.borderColor = BOT_COL[b]; });
-  $("mixBtn").classList.toggle("own", Object.keys(round.owned.mixes).length > 0);
   $("peekBtn").classList.toggle("own", !!spec.peek && !peekUsed);
 }
 function updateHud() {
-  if (spec.story) { $("hudL").textContent = "G" + (spec.g + 1) + " · " + (spec.boss ? "BOSS" : "L" + (spec.l + 1)) + " · QUOTA " + spec.quota; $("hudR").textContent = round.points + " PTS"; }
+  if (spec.practice) { $("hudL").textContent = "PRACTICE · NO CLOCK"; $("hudR").textContent = ""; }
+  else if (spec.story) { $("hudL").textContent = "G" + (spec.g + 1) + " · " + (spec.boss ? "BOSS" : "L" + (spec.l + 1)) + " · QUOTA " + spec.quota; $("hudR").textContent = round.points + " PTS"; }
   else { $("hudL").textContent = "ARCADE"; $("hudR").textContent = round.results.length + " SHIPPED"; }
 }
 
@@ -176,9 +235,9 @@ function shipped(f) { // no grade mid-round: results wait for the review. Points
 }
 function beginLevel() {
   AudioSys.init(); sanitizeConfig();
-  spec = mode === "story" ? levelSpec(RUN, META, CONFIG) : arcadeSpec(CONFIG, t2Unlocked());
+  spec = mode === "story" ? levelSpec(RUN, META, CONFIG) : mode === "practice" ? practiceSpec() : arcadeSpec(CONFIG, t2Unlocked(), META);
   round = createPaintRound(CONFIG, spec, makeRng(newSeed()));
-  paint = null; lastSecShown = -1; builtKey = ""; LY = null; botBrush = null; mixOn = false; peekUsed = false; peekUntil = -1; hiddenShown = false; spinAng = 0; fogPts = [];
+  paint = null; lastSecShown = -1; builtKey = ""; LY = null; wells = []; for (var w = 0; w < spec.wells; w++) wells.push(0); brushWell = null; lastWell = 0; drag = null; peekUsed = false; peekUntil = -1; hiddenShown = false; spinAng = 0; fogPts = [];
   if (brush === undefined || brush > 6) brush = 1;
   wrapEl.style.transform = "";
   show("game");
@@ -232,6 +291,7 @@ function handleEvents() {
     else if (ev[i] === "meteorWarn") AudioSys.sfx("tick");
     else if (ev[i] === "meteor") { paintCells(null, round.grid.cells); renderPlanet(); AudioSys.sfx("erase"); }
     else if (ev[i] === "locked") { refreshLocked(); AudioSys.sfx("tap"); }
+    else if (ev[i] === "freeSkip") { var fl = $("flash"); setTimeout(function () { fl.innerHTML = "<small>FREE SKIP +" + CONFIG.freeSkipSec + " s</small>"; fl.classList.remove("go"); void fl.offsetWidth; fl.classList.add("go"); }, 50); }
   }
 }
 
@@ -264,15 +324,8 @@ function toScreen(c, gx, gy) {
   }
   mid.addEventListener("pointerup", stop); mid.addEventListener("pointercancel", stop);
   BOTS.forEach(function (b) {
-    $("bot_" + b).addEventListener("pointerdown", function (e) { e.preventDefault(); e.stopPropagation(); if (phase === "play" || phase === "countdown") selectBot(b); });
+    $("bot_" + b).addEventListener("pointerdown", function (e) { e.preventDefault(); e.stopPropagation(); if (phase === "play" || phase === "countdown") pressBot(b); });
   });
-  var mx = $("mixBtn");
-  mx.addEventListener("pointerdown", function (e) {
-    e.preventDefault(); e.stopPropagation();
-    mixOn = CONFIG.mixMode === "hold" ? true : !mixOn; if (botBrush) botBrush = null; refreshBrushUI(); AudioSys.sfx("tap");
-  });
-  function mixUp(e) { if (CONFIG.mixMode === "hold" && mixOn) { mixOn = false; refreshBrushUI(); } }
-  mx.addEventListener("pointerup", mixUp); mx.addEventListener("pointercancel", mixUp); mx.addEventListener("pointerleave", mixUp);
   $("peekBtn").addEventListener("pointerdown", function (e) {
     e.preventDefault(); e.stopPropagation();
     if (phase !== "play" || peekUsed) return;
@@ -282,21 +335,23 @@ function toScreen(c, gx, gy) {
 function doSpray(now) {
   var off = CONFIG.brushOffsetY, a = toGrid(paint.c, paint.lx, paint.ly - off), b = toGrid(paint.c, paint.x, paint.y - off), rad = brushRad(round), G = round.grid.G;
   var dist = Math.sqrt((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y)), steps = Math.max(1, Math.ceil(dist / Math.max(0.5, rad * 0.4))), changed = [], s, c, k, px, py;
-  var opt = botBrush ? { bot: botBrush } : mixOn ? { mix: true } : null;
-  for (s = 1; s <= steps; s++) {
+  var id = activeId(), empty = brushWell !== null && !id;
+  for (s = 1; s <= steps && !empty; s++) {
     px = a.x + (b.x - a.x) * s / steps; py = a.y + (b.y - a.y) * s / steps;
-    c = paintSpray(round, px, py, rad, brush, opt); for (k = 0; k < c.length; k++) changed.push(c[k]);
-    if (round.mod.mirror) { c = paintSpray(round, G - px, py, rad, brush, opt); for (k = 0; k < c.length; k++) changed.push(c[k]); }
+    c = paintSpray(round, px, py, rad, id); for (k = 0; k < c.length; k++) changed.push(c[k]);
+    if (round.mod.mirror) { c = paintSpray(round, G - px, py, rad, id); for (k = 0; k < c.length; k++) changed.push(c[k]); }
   }
   paint.lx = paint.x; paint.ly = paint.y;
   if (round.mod.fog) { var lp = fogPts[fogPts.length - 1]; if (lp && Math.abs(lp.x - b.x) + Math.abs(lp.y - b.y) < rad * 0.5) lp.t = now; else fogPts.push({ x: b.x, y: b.y, t: now }); }
   if (!changed.length) return;
-  if (now - lastHiss > 90) { lastHiss = now; AudioSys.sfx(brush === 0 || botBrush ? "rot" : "spray", 3); }
+  if (now - lastHiss > 90) { lastHiss = now; AudioSys.sfx(id === 0 ? "rot" : "spray", 3); }
   paintCells(changed, round.grid.cells);
   var fin = paintFinishIfDone(round);
   if (fin) { // finished: ship it (no grade until the review) and bring in the next customer's planet
     paintCells(null, fin.cells); renderPlanet(); fin.pic = snapshot(); flyOff(fin.pic);
-    paint = null; newPlanetUI(true);
+    paint = null;
+    if (spec.practice) { shipped(fin); AudioSys.sfx("ship"); round.over = true; round.endReason = "practice"; endRound(); return; }
+    newPlanetUI(true);
     shipped(fin); AudioSys.sfx("ship");
     setTimeout(function () { AudioSys.sfx("chatter"); }, 420);
     return;
@@ -306,8 +361,15 @@ function doSpray(now) {
 function drawCursor() {
   var d = L ? L.dpr : 1;
   gctx.setTransform(1, 0, 0, 1, 0, 0); gctx.clearRect(0, 0, ghostEl.width, ghostEl.height);
-  if (!L || phase !== "play" || !LY) return;
+  if (!L || (phase !== "play" && phase !== "countdown") || !LY) return;
   gctx.setTransform(d, 0, 0, d, 0, 0);
+  if (drag && drag.on) { // a terrain being carried to a well
+    var q = 34, over = wellAt(drag.x, drag.y) >= 0;
+    gctx.save(); gctx.translate(drag.x, drag.y - 30); gctx.globalAlpha = 0.92; gctx.scale(over ? 1.15 : 1, over ? 1.15 : 1);
+    rr(gctx, -q / 2, -q / 2, q, q, 7); gctx.save(); gctx.clip(); texDraw(gctx, drag.id, 0, 0, 120, 120, -q / 2, -q / 2, q, q); gctx.restore();
+    gctx.lineWidth = 3; gctx.strokeStyle = over ? "#f2b33d" : "#f4e6c8"; rr(gctx, -q / 2, -q / 2, q, q, 7); gctx.stroke(); gctx.restore();
+  }
+  if (phase !== "play") return;
   var cell = LY.S / L.dpr, rad = brushRad(round) * cell, c;
   if (round.meteor) { // incoming!
     c = wrapCentre(); var m = round.meteor, p = toScreen(c, m.cx, m.cy);
@@ -315,7 +377,7 @@ function drawCursor() {
     gctx.fillStyle = "rgba(255,74,42,.25)"; gctx.fill();
   }
   if (!paint) return;
-  var x = paint.x, y = paint.y - CONFIG.brushOffsetY, col = botBrush ? BOT_COL[botBrush] : TCOL[brush];
+  var x = paint.x, y = paint.y - CONFIG.brushOffsetY, col = TCOL[activeId()] || "#f4e6c8";
   function ring(X, Y) {
     gctx.strokeStyle = "rgba(5,6,15,.8)"; gctx.lineWidth = 4; gctx.beginPath(); gctx.arc(X, Y, rad, 0, 7); gctx.stroke();
     gctx.strokeStyle = col; gctx.lineWidth = 2; gctx.beginPath(); gctx.arc(X, Y, rad, 0, 7); gctx.stroke();
@@ -341,32 +403,59 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-/* ----- results: solar system on top, then the level summary and the planet-by-planet review ----- */
+/* ----- results: solar system on top, then the level summary (overall grade spins like a slot machine) and the planet-by-planet review ----- */
 function miniPlanet(pic) {
   var c = document.createElement("canvas"); c.width = pic.width; c.height = pic.height; c.style.width = c.style.height = "84px";
   c.getContext("2d").drawImage(pic, 0, 0); return c;
 }
-function arcadeKey() { return (CONFIG.arcadeCount || "R") + (CONFIG.randomShapes ? "S" : "C") + (spec && spec.tier2 ? "T" : ""); }
+function arcadeKey() { return (CONFIG.arcadeCount || "R") + (CONFIG.randomShapes ? "S" : "C") + (CONFIG.arcadeTier2 && t2Unlocked() ? "T" : ""); }
+var spinToken = 0;
+function spinGrade(final, gi, done) { // slot-machine reel for the overall grade, then the grade sting
+  var el = $("ogReel"), my = ++spinToken, n = 0, steps = 22, letters = GRADES;
+  if (!el) return;
+  if (final === "-") { el.textContent = "-"; el.classList.add("stop"); AudioSys.music(null); AudioSys.sfx("sting", 5); if (done) done(); return; }
+  el.classList.add("spinning");
+  (function tick() {
+    if (my !== spinToken) return;
+    if (n < steps) {
+      el.textContent = letters[(n * 5 + 3) % letters.length]; AudioSys.sfx("reel", n);
+      el.classList.remove("roll"); void el.offsetWidth; el.classList.add("roll");
+      n++; setTimeout(tick, 45 + Math.pow(n / steps, 3) * 330);
+      return;
+    }
+    el.textContent = final; el.classList.remove("spinning", "roll"); el.classList.add("stop", "g" + gi);
+    AudioSys.music(null); AudioSys.sfx("sting", gi);
+    setTimeout(function () { if (my === spinToken && phase === "recap") AudioSys.music("recap"); }, 3200);
+    if (done) done();
+  })();
+}
 function showResults() {
-  var sum = summarizeRound(round), body = $("recapBody"), html = "", res = null, lvl = "";
+  var sum = summarizeRound(round), body = $("recapBody"), html = "", res = null, lvl = "", best = false, prac = !!spec.practice;
   sys = makeSystem(round.results, makeRng(newSeed()), !!META.hq.suns); solarT = 0; solarSel = -1; stockEarned = 0;
-  var credits = "pay " + sum.payments + " MC &nbsp;" + (sum.bonus >= 0 ? "+" : "&minus;") + " " + Math.abs(sum.bonus) + " grade bonus" + (sum.t2 ? " &nbsp;(incl. " + sum.t2 + " tier-2 bonus)" : "") + (sum.steady ? " &nbsp;+ " + sum.steady + " steady payout" : "");
+  var credits = "pay " + sum.payments + " MC &nbsp;" + (sum.bonus >= 0 ? "+" : "&minus;") + " " + Math.abs(sum.bonus) + " grade bonus" + (sum.t2 ? " &nbsp;(incl. " + sum.t2 + " tier-2 multiplier)" : "") + (sum.steady ? " &nbsp;+ " + sum.steady + " steady payout" : "");
+  var reel = '<div class="og">OVERALL GRADE <b id="ogReel" class="reel">?</b></div>';
   if (spec.story) {
     lvl = "GALAXY " + (spec.g + 1) + " &middot; " + (spec.boss ? "BOSS" : "LEVEL " + (spec.l + 1));
     res = finishLevel(RUN, sum, CONFIG);
-    if (RUN.level >= 5 && !META.arcadeTier2Unlocked) { META.arcadeTier2Unlocked = true; saveMeta(); }
-    if (RUN.over) { stockEarned = endRun(RUN, META, CONFIG); saveMeta(); }
+    if (RUN.level >= LPG && !META.arcadeTier2Unlocked) { META.arcadeTier2Unlocked = true; saveMeta(); }
+    if (RUN.over) { best = RUN.points > META.best; stockEarned = endRun(RUN, META, CONFIG); saveMeta(); }
     saveRun();
     html = '<div id="totals"><div class="lbl">' + lvl + '</div><div class="big">' + sum.points + " / " + res.quota + ' PTS</div>' +
-      '<div class="stamp ' + (res.passed ? "pass" : "fail") + '">' + (res.passed ? "QUOTA PASSED" : "QUOTA FAILED") + "</div>" +
-      '<div class="og">OVERALL GRADE <b>' + sum.overall + '</b></div><div class="sm">credits earned: ' + sum.total + " MC &nbsp;(" + credits + ")<br>wallet: " + RUN.wallet + " MC &middot; run points: " + RUN.points + "</div></div>";
+      '<div id="stamp" class="stamp hide ' + (res.passed ? "pass" : "fail") + '">' + (res.shielded ? "SHIELDED PASS" : res.passed ? "QUOTA PASSED" : "QUOTA FAILED") + "</div>" + reel +
+      '<div id="newBest" class="newbest hide">NEW BEST RUN!</div>' +
+      '<div class="sm">credits earned: ' + sum.total + " MC &nbsp;(" + credits + ")<br>wallet: " + RUN.wallet + " MC &middot; run points: " + RUN.points + "</div></div>";
     $("recapTitle").textContent = "LEVEL REVIEW";
+  } else if (prac) {
+    html = '<div id="totals"><div class="lbl">PRACTICE PLANET</div>' + reel + '<div class="sm">Practice earns nothing. In a real round you keep painting planets until the clock runs out.</div></div>';
+    $("recapTitle").textContent = "PRACTICE REVIEW";
   } else {
     var hist = loadJSON("tpbq_hist_arc"); if (!Array.isArray(hist)) hist = [];
     var dnow = new Date();
     hist.unshift({ t: (dnow.getMonth() + 1) + "/" + dnow.getDate() + " " + dnow.getHours() + ":" + ("0" + dnow.getMinutes()).slice(-2), k: arcadeKey(), total: sum.total, grade: sum.overall, planets: sum.planets, skipped: sum.skipped });
     hist = hist.slice(0, 40); saveJSON("tpbq_hist_arc", hist);
-    html = '<div id="totals"><div class="lbl">ROUND SCORE</div><div class="big">' + sum.total + ' MC</div><div class="og">OVERALL GRADE <b>' + sum.overall + '</b></div><div class="sm">' + credits + "</div></div>";
+    best = sum.planets > 0 && arcadeBest(META, arcadeKey(), sum.total); saveMeta();
+    html = '<div id="totals"><div class="lbl">ROUND SCORE</div><div class="big">' + sum.total + ' MC</div>' + reel +
+      '<div id="newBest" class="newbest hide">NEW HIGH SCORE!</div><div class="sm">' + credits + "<br>best with these options: " + META.bestArc[arcadeKey()] + " MC</div></div>";
     $("recapTitle").textContent = "QUARTERLY PLANET REVIEW";
   }
   body.innerHTML = html;
@@ -380,30 +469,37 @@ function showResults() {
     el.appendChild(miniPlanet(p.pic));
     var t = '<div class="pname">' + p.order.planet + "<small>for " + p.order.name + '</small></div><table><tr><td>#' + (i + 1) + '</td><td class="n">want</td><td class="n">got</td><td class="n">diff</td></tr>';
     p.rows.forEach(function (r) { t += '<tr><td style="color:' + TCOL[r.terrain] + '">' + tname(r.terrain) + '</td><td class="n">' + r.target + '%</td><td class="n">' + r.actual + '%</td><td class="n">' + r.err + "</td></tr>"; });
-    t += '<tr><td colspan="3">SUM DIFF</td><td class="n">' + p.S + '</td></tr><tr><td colspan="4">base ' + p.basePay + " &rarr; paid " + p.paid + (p.t2 ? " (incl. +" + p.t2 + " tier-2)" : "") + (p.steady ? " +" + p.steady : "") + " MC &middot; " + p.seconds.toFixed(1) + "s &middot; " + p.points + " pts" + (p.vip ? " (VIP: nothing below B)" : "") + "</td></tr></table>";
+    t += '<tr><td colspan="3">SUM DIFF</td><td class="n">' + p.S + '</td></tr><tr><td colspan="4">base ' + p.basePay + (p.order.mult > 100 ? " x" + p.order.mult / 100 : "") + " &rarr; paid " + p.paid + (p.t2 ? " (incl. +" + p.t2 + " tier-2)" : "") + (p.steady ? " +" + p.steady : "") + " MC &middot; " + p.seconds.toFixed(1) + "s &middot; " + p.points + " pts" + (p.vip ? " (VIP: nothing below B)" : "") + "</td></tr></table>";
     var w = document.createElement("div"); w.style.flex = "1"; w.innerHTML = t; el.appendChild(w);
     var g = document.createElement("div"); g.className = "pg"; g.innerHTML = p.grade + "<small>GRADE</small>"; el.appendChild(g);
     body.appendChild(el);
   });
   var rest = document.createElement("div"), btns;
   if (spec.story) btns = !RUN.over ? '<button id="rcNext" class="pri">CONTINUE TO STORE</button>' : '<button id="rcNext" class="pri">' + (RUN.won ? "RUN COMPLETE!" : "RUN OVER") + "</button>";
+  else if (prac) btns = '<button id="rcPrac" class="pri">ANOTHER PRACTICE</button><button id="rcMenu">MENU</button>';
   else btns = '<button id="rcReplay" class="pri">REPLAY</button><button id="rcMenu">MENU</button>';
   var hl = "";
-  if (!spec.story) {
+  if (!spec.story && !prac) {
     var mine = (loadJSON("tpbq_hist_arc") || []).filter(function (h) { return h.k === arcadeKey(); }).slice(0, 10);
     hl = '<div class="hist">LAST ' + mine.length + " ROUNDS WITH THESE OPTIONS<br>" + mine.map(function (h) { return h.t + " &middot; " + h.total + " MC &middot; " + h.grade + " &middot; " + h.planets + " planets, " + h.skipped + " skipped"; }).join("<br>") + "</div>";
   }
-  rest.innerHTML = '<div class="stats">planets finished: ' + sum.planets + " &middot; skipped: " + sum.skipped + "<br>avg seconds / planet: " + (sum.planets ? sum.avgSeconds.toFixed(1) : "-") + "</div>" +
+  rest.innerHTML = (prac ? "" : '<div class="stats">planets finished: ' + sum.planets + " &middot; skipped: " + sum.skipped + "<br>avg seconds / planet: " + (sum.planets ? sum.avgSeconds.toFixed(1) : "-") + "</div>") +
     '<div class="rbtns">' + btns + '</div><div class="rbtns"><button id="rcMute" class="small"></button></div>' + hl;
   body.appendChild(rest);
-  if ($("rcNext")) $("rcNext").onclick = function () { AudioSys.sfx("tap"); if (RUN.over) pageRunEnd(); else pageStore(true); };
-  if ($("rcReplay")) $("rcReplay").onclick = function () { AudioSys.sfx("tap"); beginLevel(); };
-  if ($("rcMenu")) $("rcMenu").onclick = function () { AudioSys.sfx("tap"); toStart(); };
+  if ($("rcNext")) $("rcNext").onclick = function () { spinToken++; AudioSys.sfx("tap"); if (RUN.over) pageRunEnd(); else pageStore(true); };
+  if ($("rcReplay")) $("rcReplay").onclick = function () { spinToken++; AudioSys.sfx("tap"); beginLevel(); };
+  if ($("rcPrac")) $("rcPrac").onclick = function () { spinToken++; AudioSys.sfx("tap"); mode = "practice"; beginLevel(); };
+  if ($("rcMenu")) $("rcMenu").onclick = function () { spinToken++; AudioSys.sfx("tap"); toStart(); };
   $("rcMute").onclick = function () { AudioSys.toggleMute(); muteLabels(); };
   muteLabels();
   phase = "recap"; show("recap"); body.scrollTop = 0;
-  AudioSys.sfx("grade", sum.planets ? sum.overallGi : 5);
   AudioSys.music("recap");
+  setTimeout(function () {
+    spinGrade(sum.planets ? sum.overall : "-", sum.planets ? sum.overallGi : 5, function () {
+      if ($("stamp")) $("stamp").classList.remove("hide");
+      if (best && $("newBest")) { $("newBest").classList.remove("hide"); setTimeout(function () { AudioSys.sfx("fanfare"); }, 900); }
+    });
+  }, 700);
 }
 $("solar").addEventListener("pointerdown", function (e) { // tap a planet -> its card
   if (!sys) return;
@@ -415,30 +511,102 @@ $("solar").addEventListener("pointerdown", function (e) { // tap a planet -> its
   var el = $("pc" + i); if (el) { el.classList.add("hl"); el.scrollIntoView({ block: "center", behavior: "smooth" }); }
 });
 
-/* ----- pages: run map, store, HQ, arcade options, run end ----- */
+/* ----- pages: slideshows (tutorial, galaxy intros, explainers), run map, store, HQ, arcade options, run end ----- */
 function page(title, html, back) {
   $("pageTitle").textContent = title; $("pageBody").innerHTML = html;
   $("pageBack").style.display = back === false ? "none" : ""; $("pageBack").onclick = function () { AudioSys.sfx("tap"); toStart(); };
   phase = "idle"; show("page"); $("pageBody").scrollTop = 0; AudioSys.init(); AudioSys.music("title");
 }
+// slides: [{ h, html, draw(el) }]. Always shown; a SKIP button appears once this sequence has been seen before.
+function slideshow(title, slides, seenKey, done, finish) {
+  var i = 0, seen = !!META.seen[seenKey];
+  function end(how) { META.seen[seenKey] = true; saveMeta(); done(how); }
+  function render() {
+    var s = slides[i], last = i === slides.length - 1;
+    var dots = slides.map(function (x, k) { return '<i class="' + (k === i ? "on" : "") + '"></i>'; }).join("");
+    page(title, '<div class="dots">' + dots + '</div><div class="slcard"><h3>' + s.h + '</h3><div class="sart" id="sart"></div><div class="stext">' + s.html + "</div></div>" +
+      '<div class="rbtns">' + (i > 0 ? '<button id="slBack">BACK</button>' : "") + (last && finish ? finish.map(function (f, k) { return '<button id="slF' + k + '"' + (k === 0 ? ' class="pri"' : "") + ">" + f + "</button>"; }).join("") : '<button id="slNext" class="pri">' + (last ? "START" : "NEXT") + "</button>") + "</div>" +
+      (seen && !last ? '<div class="rbtns"><button id="slSkip" class="small">SKIP</button></div>' : ""), seenKey === "tutorial");
+    if (s.draw) s.draw($("sart"));
+    if ($("slBack")) $("slBack").onclick = function () { AudioSys.sfx("tap"); i--; render(); };
+    if ($("slNext")) $("slNext").onclick = function () { AudioSys.sfx("tap"); if (last) end(0); else { i++; render(); } };
+    if (finish) finish.forEach(function (f, k) { if ($("slF" + k)) $("slF" + k).onclick = function () { AudioSys.sfx("tap"); end(k); }; });
+    if ($("slSkip")) $("slSkip").onclick = function () { AudioSys.sfx("tap"); end(finish ? finish.length - 1 : 0); };
+  }
+  render();
+}
+function chipRow(ids) { return '<span class="crow">' + ids.map(function (id) { return chip(id) + "<b>" + TERRAINS[id].name + "</b>"; }).join("") + "</span>"; }
+function recipeLine(a, op, out) { return '<div class="rline">' + chip(a) + "<b>" + TERRAINS[a].name + "</b><em>" + op + "</em>&rarr;" + chip(out) + "<b>" + TERRAINS[out].name + "</b></div>"; }
+function shapeThumbs(el, names) {
+  names.forEach(function (n) {
+    var g = makeGrid(26, n), c = document.createElement("canvas"), px = 26 * 2; c.width = c.height = px; c.style.width = c.style.height = "44px"; c.className = "sthumb";
+    var x = c.getContext("2d"); x.fillStyle = "#f4e6c8";
+    for (var i = 0; i < g.cells.length; i++) if (g.inside[i]) x.fillRect((i % 26) * 2, ((i / 26) | 0) * 2, 2, 2);
+    el.appendChild(c);
+  });
+}
+function wellArt(el, a, b, out) { // little "A + B -> well" picture
+  var c = document.createElement("canvas"), d = L.dpr, w = 230, h = 92; c.width = w * d; c.height = h * d; c.style.width = w + "px"; c.style.height = h + "px";
+  var x = c.getContext("2d"); x.scale(d, d);
+  function card(id, cx) { x.save(); x.translate(cx, 46); drawCard(x, id, 34, 50, 1, true); x.restore(); }
+  card(a, 28); if (b !== null) card(b, 84);
+  x.fillStyle = POSTER() ? "#17383f" : "#e6ecff"; x.font = "900 24px sans-serif"; x.textAlign = "center"; x.fillText(b === null ? "" : "+", 56, 54); x.fillText("→", b === null ? 84 : 132, 54);
+  x.save(); x.translate(190, 46); drawWell(x, out, 40, 60); x.restore();
+  el.appendChild(c);
+}
+function botSlide(b) {
+  var rec = BOT_RECIPES[b], lines = Object.keys(rec).map(function (k) { return recipeLine(+k, BOT_NAMES[b], rec[k]); }).join("");
+  var notes = Object.keys(rec).filter(function (k) { return +k > 6; }).map(function (k) { var rc = recipeFor(+k); return "<br>" + TERRAINS[k].name + " is itself made: " + recipeText(+k) + "."; }).join("");
+  return { h: BOT_NAMES[b] + " UNLOCKED", html: lines + '<p>Drag a terrain into your <b>WELL</b>, tap the ' + BOT_NAMES[b] + ' at the planet corner, then tap the well and paint with the result. No recipe for what is in the well? Nothing happens.' + notes + "</p>",
+    draw: function (el) { var s = document.createElement("div"); s.className = "bigbot"; s.style.color = BOT_COL[b]; s.style.borderColor = BOT_COL[b]; s.innerHTML = botSVG(b); el.appendChild(s); var k = +Object.keys(rec)[0]; wellArt(el, k, null, rec[k]); } };
+}
+function mixSlide(id) {
+  var m = MIXES.filter(function (x) { return x.id === id; })[0];
+  return { h: "NEW RECIPE: " + TERRAINS[m.out].name, html: recipeLine(m.a, "+ " + TERRAINS[m.b].name, m.out) +
+    "<p>Drop " + TERRAINS[m.a].name + " and " + TERRAINS[m.b].name + " into a well, in either order, and they combine into " + TERRAINS[m.out].name + ". If the second terrain is not a recipe with what is in the well, it just replaces it. Drag ERASE into a well to empty it.</p>",
+    draw: function (el) { wellArt(el, m.a, m.b, m.out); } };
+}
+function galaxySlides(info) {
+  var g = info.g, sl = [], adds = [];
+  if (info.moreTerrains) adds.push("<li><b>+1 TERRAIN PER ORDER</b> (now " + info.terrains + ")</li>");
+  if (info.comp) adds.push("<li><b>" + COMP_INFO[info.comp][0] + "</b> " + COMP_INFO[info.comp][1] + "</li>");
+  if (info.mix) { var m = MIXES.filter(function (x) { return x.id === info.mix; })[0]; adds.push("<li><b>NEW RECIPE: " + TERRAINS[m.out].name + "</b> " + TERRAINS[m.a].name + " + " + TERRAINS[m.b].name + "</li>"); }
+  if (info.newTerrains.length) adds.push("<li><b>NOW ORDERED:</b> " + chipRow(info.newTerrains) + "</li>");
+  if (g > 0) adds.push("<li><b>STILL IN EFFECT:</b> everything from earlier galaxies</li>");
+  if (g === 0) adds = ["<li><b>" + CONFIG.galaxyTerrains[0] + " TERRAINS PER ORDER</b>, round planets</li>", "<li><b>YOUR MIXING WELL</b> sits right of the paints. Recipes and bots arrive in later galaxies.</li>", "<li><b>" + LPG + " LEVELS</b>: " + (LPG - 1) + " normal, then a boss</li>"];
+  sl.push({ h: '<small>GALAXY ' + (g + 1) + " OF " + GALAXIES + "</small>" + info.name.toUpperCase(), html: "<ul>" + adds.join("") + "</ul>",
+    draw: function (el) { var c = document.createElement("canvas"); c.className = "galart"; el.appendChild(c); drawGalaxyArt(c, info); } });
+  if (info.comp && info.comp.indexOf("bot:") === 0) sl.push(botSlide(info.comp.slice(4)));
+  if (info.comp && info.comp.indexOf("shapes:") === 0) sl.push({ h: COMP_INFO[info.comp][0], html: "<p>" + COMP_INFO[info.comp][1] + ". Same brush, same scoring: percentages are of the planet's own squares.</p>", draw: function (el) { shapeThumbs(el, SHAPE_SETS[info.comp.slice(7)]); } });
+  if (info.comp === "size") sl.push({ h: COMP_INFO.size[0], html: "<p>" + COMP_INFO.size[1] + ".</p>", draw: function (el) { shapeThumbs(el, ["circle"]); var a = el.lastChild; a.style.width = a.style.height = "28px"; shapeThumbs(el, ["circle"]); } });
+  if (info.mix) sl.push(mixSlide(info.mix));
+  return sl;
+}
+function showGalaxy(g, then) {
+  var info = RUN.galaxies[g];
+  slideshow("NEW GALAXY", galaxySlides(info), "gal:" + (info.comp || "home"), function () { AudioSys.sfx("go"); then(); });
+  AudioSys.sfx("fanfare");
+}
 function ownedText(run) {
   var b = BOTS.filter(function (x) { return run.owned.bots[x]; }).map(function (x) { return BOT_NAMES[x]; });
   var m = MIXES.filter(function (x) { return run.owned.mixes[x.id]; }).map(function (x) { return TERRAINS[x.out].name; });
   var it = []; if (run.items.brush) it.push("BRUSH +" + run.items.brush); if (run.items.time) it.push("+" + run.items.time * CONFIG.timeStackSec + " s");
-  if (run.items.peek) it.push("PEEK"); if (run.items.auto) it.push("AUTO-FINISH"); if (run.items.steady) it.push("STEADY PAYOUT");
-  return "bots: " + (b.join(", ") || "none") + "<br>mix recipes: " + (m.join(", ") || "none") + "<br>items: " + (it.join(", ") || "none");
+  [["peek", "PEEK"], ["auto", "AUTO-FINISH"], ["steady", "STEADY PAYOUT"], ["well2", "SECOND WELL"], ["calm", "CALM TOKEN"], ["skips", "FREE SKIPS"], ["boost", "MULTIPLIER BOOST"]].forEach(function (p) { if (run.items[p[0]]) it.push(p[1]); });
+  if (run.items.shield === 1) it.push("QUOTA SHIELD"); if (run.items.shield === 2) it.push("SHIELD (used)");
+  return "bots: " + (b.join(", ") || "none") + "<br>recipes: " + (m.join(", ") || "none") + "<br>items: " + (it.join(", ") || "none");
 }
 function modText(mods) { return mods.map(function (m) { return MOD_INFO[m][0]; }).join(" + "); }
 function pageRunMap() {
   mode = "story";
+  var fresh = catchUpGalaxies(RUN, CONFIG, makeRng(newSeed())); if (fresh.length) saveRun();
   var h = '<div class="wal"><div><b>' + RUN.wallet + '</b>CREDITS</div><div><b>' + RUN.points + '</b>RUN POINTS</div><div><b>' + quotaFor(RUN.level, CONFIG) + '</b>NEXT QUOTA</div></div>';
-  h += '<div class="rbtns"><button id="pgGo" class="pri">START ' + (levelInfo(RUN.level).boss ? "BOSS" : "LEVEL " + (RUN.level + 1)) + "</button></div>";
+  h += '<div class="rbtns"><button id="pgGo" class="pri">START ' + (levelInfo(RUN.level).boss ? "BOSS" : "LEVEL " + (levelInfo(RUN.level).l + 1)) + "</button></div>";
   h += '<div class="note">' + ownedText(RUN) + "</div>";
   for (var l = 0; l < LEVELS; l++) {
-    var li = levelInfo(l), mods = levelMods(RUN, l), known = l <= RUN.level + 1;
-    if (li.l === 0) h += '<div class="gal">GALAXY ' + (li.g + 1) + " &middot; " + CONFIG.galaxyTerrains[li.g] + " TERRAINS" + "</div>";
+    var li = levelInfo(l), mods = levelMods(RUN, l), known = l <= RUN.level + 1, gi = RUN.galaxies[li.g];
+    if (li.l === 0) h += '<div class="gal">GALAXY ' + (li.g + 1) + " &middot; " + (gi ? gi.name.toUpperCase() : "???") + " &middot; " + CONFIG.galaxyTerrains[li.g] + " TERRAINS" + (gi && gi.comp ? "<br><small>+ " + COMP_INFO[gi.comp][0] + "</small>" : "") + "</div>";
     h += '<div class="node' + (l === RUN.level ? " cur" : l < RUN.level ? " done" : "") + (li.boss ? " boss" : "") + '"><span>' + (li.boss ? "BOSS" : "LEVEL " + (li.l + 1)) + " &middot; quota " + quotaFor(l, CONFIG) + "</span><i>" +
-      (mods.length ? (known ? modText(mods) : "??? modifier") : "") + "</i></div>";
+      (mods.length ? (known ? modText(mods) + (li.boss && RUN.items.calm ? " (CALMED)" : "") : "??? modifier") : "") + "</i></div>";
   }
   h += '<div class="rbtns"><button id="pgAb" class="small">ABANDON RUN</button></div>';
   page("RUN MAP", h);
@@ -449,27 +617,38 @@ function pageRunMap() {
     RUN.over = true; stockEarned = endRun(RUN, META, CONFIG); saveMeta(); saveRun(); pageRunEnd();
   };
 }
+function toRunMap() { // after the store: a new galaxy gets its intro first
+  var g = levelInfo(RUN.level).g;
+  if (!RUN.galaxies[g]) { enterGalaxy(RUN, g, CONFIG, makeRng(newSeed())); saveRun(); showGalaxy(g, pageRunMap); }
+  else pageRunMap();
+}
 var offers = [], rerolled = false;
+var QUIPS = ["Everything must go. Mostly the customers.", "Prices include tax, gravity and a modest curse.", "No refunds. No questions. Some answers.", "Buy two, get the feeling you bought two.",
+  "Fresh from the cargo bay, barely scorched.", "I accept credits, compliments and small moons.", "This one fell off a freighter. Legally.", "Corporate says I have to smile. :|"];
+var SHOPKEEP = { tint: 6, look: { head: 2, eyes: 3, antenna: 2 } };
 function pageStore(fresh) {
   if (fresh) { offers = storeOffers(RUN, META, CONFIG, makeRng(newSeed())); rerolled = false; }
-  var items = storeItems(CONFIG), h = '<div class="wal"><div><b>' + RUN.wallet + '</b>CREDITS</div><div><b>' + RUN.points + '</b>RUN POINTS</div></div>';
+  var items = storeItems(CONFIG), q = QUIPS[(Math.random() * QUIPS.length) | 0];
+  var h = '<div class="keeper"><div class="ksvg">' + alienSVG(SHOPKEEP, "k") + '</div><div class="ksay"><b>ZORGLE\'S ORBITAL BAZAAR</b>' + q + "</div></div>" +
+    '<div class="wal"><div><b>' + RUN.wallet + '</b>CREDITS</div><div><b>' + RUN.points + '</b>RUN POINTS</div></div><div class="tower">';
   if (!offers.length) h += '<div class="note">Nothing left to sell you. Remarkable.</div>';
   offers.forEach(function (id, i) {
-    var it = items.filter(function (x) { return x.id === id; })[0], can = itemEligible(RUN, id, CONFIG);
-    h += '<div class="pcard"><div class="it"><b>' + it.name + "</b><small>" + it.desc + '</small></div><button data-buy="' + i + '"' + (!can || RUN.wallet < it.price ? " disabled" : "") + ">" + (can ? it.price + " MC" : "SOLD") + "</button></div>";
+    var it = items.filter(function (x) { return x.id === id; })[0], can = itemEligible(RUN, id, CONFIG, META);
+    h += '<div class="stall s' + (i % 4) + (can ? "" : " sold") + '"><div class="awn"></div><div class="sbody"><div class="sicon">' + storeIcon(id) + '</div><div class="it"><b>' + it.name + "</b><small>" + it.desc + '</small></div><button data-buy="' + i + '"' + (!can || RUN.wallet < it.price ? " disabled" : "") + ">" + (can ? it.price + " MC" : "SOLD") + "</button></div></div>";
   });
-  h += '<div class="rbtns">' + (META.hq.reroll && !rerolled ? '<button id="pgRe" class="small">FREE REROLL</button>' : "") + '<button id="pgGo" class="pri">CONTINUE</button></div><div class="note">' + ownedText(RUN) + "</div>";
+  h += '</div><div class="rbtns">' + (META.hq.reroll && !rerolled ? '<button id="pgRe" class="small">FREE REROLL</button>' : "") + '<button id="pgGo" class="pri">CONTINUE</button></div><div class="note">' + ownedText(RUN) + "</div>";
   page("STORE", h, false);
+  $("pageTitle").innerHTML = '<span class="ticon">' + storeIcon("shop") + "</span>STORE";
   Array.prototype.forEach.call(document.querySelectorAll("[data-buy]"), function (b) {
-    b.onclick = function () { if (buyItem(RUN, offers[+b.getAttribute("data-buy")], CONFIG)) { AudioSys.sfx("coin"); saveRun(); pageStore(false); } else AudioSys.sfx("bonk"); };
+    b.onclick = function () { if (buyItem(RUN, offers[+b.getAttribute("data-buy")], CONFIG, META)) { AudioSys.sfx("coin"); saveRun(); pageStore(false); } else AudioSys.sfx("bonk"); };
   });
   if ($("pgRe")) $("pgRe").onclick = function () { rerolled = true; offers = storeOffers(RUN, META, CONFIG, makeRng(newSeed())); AudioSys.sfx("skip"); pageStore(false); };
-  $("pgGo").onclick = function () { AudioSys.sfx("tap"); saveRun(); pageRunMap(); };
+  $("pgGo").onclick = function () { AudioSys.sfx("tap"); saveRun(); toRunMap(); };
 }
 function pageRunEnd() {
-  var won = RUN && RUN.won, li = RUN ? levelInfo(Math.min(RUN.level, LEVELS - 1)) : { g: 0, l: 0 };
-  var h = '<div class="big2">' + (won ? "ALL THREE GALAXIES SERVED" : "RUN OVER") + '</div><div class="wal" style="margin-top:14px"><div><b>' + (RUN ? RUN.points : 0) + '</b>RUN POINTS</div><div><b>+' + stockEarned + '</b>STOCK EARNED</div><div><b>' + META.stock + "</b>STOCK</div></div>" +
-    '<div class="note">' + (won ? "The board is pleased. Briefly." : "Reached galaxy " + (li.g + 1) + ", " + (li.l === 4 ? "boss" : "level " + (li.l + 1)) + ".") + "<br>best run: " + META.best + " points &middot; runs: " + META.runs + "<br>Stock = run points / " + CONFIG.stockPerPoints + ", spent at HQ on permanent unlocks.</div>" +
+  var won = RUN && RUN.won, li = RUN ? levelInfo(Math.min(RUN.level, LEVELS - 1)) : { g: 0, l: 0, boss: false };
+  var h = '<div class="big2">' + (won ? "ALL FOUR GALAXIES SERVED" : "RUN OVER") + '</div><div class="wal" style="margin-top:14px"><div><b>' + (RUN ? RUN.points : 0) + '</b>RUN POINTS</div><div><b>+' + stockEarned + '</b>STOCK EARNED</div><div><b>' + META.stock + "</b>STOCK</div></div>" +
+    '<div class="note">' + (won ? "The board is pleased. Briefly." : "Reached galaxy " + (li.g + 1) + ", " + (li.boss ? "boss" : "level " + (li.l + 1)) + ".") + "<br>best run: " + META.best + " points &middot; runs: " + META.runs + "<br>Stock = run points / " + CONFIG.stockPerPoints + ", spent at HQ on permanent unlocks.</div>" +
     '<div class="rbtns"><button id="pgHQ" class="pri">GO TO HQ</button><button id="pgNew">NEW RUN</button></div>';
   RUN = null;
   page(won ? "VICTORY" : "RUN END", h);
@@ -496,10 +675,11 @@ function pageArcade() {
       return '<button data-k="' + key + '" data-v="' + i + '"' + (CONFIG[key] === o ? ' class="sel"' : "") + (locked ? " disabled" : "") + ">" + names[i] + "</button>";
     }).join("") + "</div></div>";
   }
-  var OPT = { arcadeCount: [3, 4, 5, 0], randomShapes: [false, true], arcadeTier2: [false, true] }, un = t2Unlocked();
+  var OPT = { arcadeCount: [3, 4, 5, 0], randomShapes: [false, true], arcadeTier2: [false, true] }, un = t2Unlocked(), bst = META.bestArc[arcadeKey()];
   var h = row("Terrains per order", "arcadeCount", OPT.arcadeCount, ["3", "4", "5", "RANDOM"]) + row("Planet shapes", "randomShapes", OPT.randomShapes, ["CIRCLE", "RANDOM"]) +
     row("Tier-2 terrains" + (un ? "" : " (reach Galaxy 2)"), "arcadeTier2", OPT.arcadeTier2, ["OFF", "ON"], !un) +
-    '<div class="note">' + (CONFIG.arcadeTier2 && un ? "Tier-2 ON: every bot and every MIX recipe is yours for the round." : "One " + CONFIG.roundSeconds + " s round. Score = credits.") + "</div>" +
+    '<div class="wal"><div><b>' + (bst === undefined ? "-" : bst) + '</b>HIGH SCORE (THESE OPTIONS)</div></div>' +
+    '<div class="note">' + (CONFIG.arcadeTier2 && un ? "Tier-2 ON: every bot and every recipe works in your well this round." : "One " + CONFIG.roundSeconds + " s round. Score = credits.") + "</div>" +
     '<div class="rbtns"><button id="pgGo" class="pri">PLAY</button></div>';
   page("ARCADE", h);
   Array.prototype.forEach.call(document.querySelectorAll("[data-k]"), function (b) {
@@ -520,11 +700,30 @@ function startStory(fresh) {
     };
     return;
   }
-  RUN = newRun(META, CONFIG, makeRng(newSeed())); saveRun(); pageRunMap();
+  RUN = newRun(META, CONFIG, makeRng(newSeed())); enterGalaxy(RUN, 0, CONFIG, makeRng(newSeed())); saveRun();
+  showGalaxy(0, pageRunMap);
+}
+/* ----- 5-step tutorial, then an optional untimed practice planet ----- */
+function tutorial() {
+  var gm = CONFIG.gradeMaxSum, pb = CONFIG.pointsByGrade;
+  var demo = { tint: 3, look: { head: 0, eyes: 2, antenna: 1 }, slots: [{ terrain: 1, pct: 50 }, { terrain: 3, pct: 30 }, { terrain: 2, pct: 20 }] };
+  var slides = [
+    { h: "1 &middot; THE ORDER", html: "<p>Alien clients want tiny planets. Each one orders a mix of terrains by percentage: here, <b>50% FOREST, 30% SEA, 20% DESERT</b>. The thought bubble above them shows what the job pays.</p>",
+      draw: function (el) { el.innerHTML = '<div class="tdemo"><div class="ksvg">' + alienSVG(demo, "t") + '</div><div class="tbub">' + demo.slots.map(function (s) { return '<div class="oline">' + chip(s.terrain) + '<span class="nm">' + TERRAINS[s.terrain].name + '</span><span class="pc">' + s.pct + "%</span></div>"; }).join("") + "</div></div>"; } },
+    { h: "2 &middot; PAINT", html: "<p>Tap a terrain swatch at the bottom, then <b>press and hold on the planet</b> to spray it. Paint over mistakes freely. When the planet is " + CONFIG.paintFinishPct + "% covered it ships and the next client steps up. Stuck? <b>SKIP</b> them.</p>",
+      draw: function (el) { var c = document.createElement("canvas"); el.appendChild(c); drawDemoPlanet(c, [1, 3, 2], 0.7); } },
+    { h: "3 &middot; WELLS &amp; TIER 2", html: "<p><b>Drag</b> a swatch into the <b>WELL</b> to the right of the paints. Drop a second terrain in: if it's a recipe they combine (DESERT + SEA = BEACH), if not it replaces the first. Bots at the planet corners transform what's in the well. Tap the well to paint with it. Orders with tier-2 terrains pay up to <b>x2</b>.</p>",
+      draw: function (el) { wellArt(el, 2, 3, 21); } },
+    { h: "4 &middot; SCORING", html: "<p>Add up how far each percentage is off. <b>" + gm[0] + " or less = S</b>, " + gm[1] + " = A, " + gm[2] + " = B, " + gm[3] + " = C, " + gm[4] + " = D, more = F. Better grades pay more credits and earn points: S " + pb[0] + ", A " + pb[1] + ", B " + pb[2] + ", C " + pb[3] + ", D " + pb[4] + ". Grades are revealed at the end of the round.</p>",
+      draw: function (el) { el.innerHTML = '<table class="ttab"><tr><td></td><td>want</td><td>got</td><td>diff</td></tr><tr><td>FOREST</td><td>50</td><td>53</td><td>3</td></tr><tr><td>SEA</td><td>30</td><td>28</td><td>2</td></tr><tr><td>DESERT</td><td>20</td><td>19</td><td>1</td></tr><tr><td><b>SUM</b></td><td></td><td></td><td><b>6 = A</b></td></tr></table>'; } },
+    { h: "5 &middot; WIN &amp; HIGH SCORES", html: "<p><b>STORY:</b> " + GALAXIES + " galaxies of " + LPG + " levels. Each level is one " + CONFIG.roundSeconds + " s round with a points <b>quota</b>; miss it and the run ends. Every galaxy adds a new twist and every boss has a modifier. Spend credits in the store between levels. Your run points become <b>Stock</b> for permanent HQ unlocks.<br><b>ARCADE:</b> one round, score = credits.<br>Your best story run and arcade high score are on the main menu.</p>",
+      draw: function (el) { var c = document.createElement("canvas"); c.className = "galart"; el.appendChild(c); drawGalaxyArt(c, { g: 3, comp: "size" }); } }
+  ];
+  slideshow("HOW TO PLAY", slides, "tutorial", function (k) { if (k === 0) { mode = "practice"; beginLevel(); } else toStart(); }, ["PRACTICE PLANET", "MENU"]);
 }
 
 /* ----- start screen / settings ----- */
-var STYLE_NAMES = { chip: "CHIPTUNE", wave: "SYNTHWAVE", funk: "70s FUNK", poster: "INKED POSTER", classic: "CLASSIC NEON", toggle: "TAP TOGGLE", hold: "HOLD" };
+var STYLE_NAMES = { chip: "CHIPTUNE", wave: "SYNTHWAVE", funk: "70s FUNK", poster: "INKED POSTER", classic: "CLASSIC NEON" };
 var SETTINGS = [
   ["#", "LOOK AND SOUND"],
   ["artStyle", "Art style", ["poster", "classic"]], ["musicStyle", "Music style", MUSIC_STYLES], ["musicVolume", "Music volume 0-100"], ["sfxVolume", "SFX volume 0-100"],
@@ -537,27 +736,31 @@ var SETTINGS = [
   ["gradeMaxSum", "gradeMaxSum S,A,B,C,D"], ["payPct", "payPct S..F"], ["bonusMC", "bonusMC S..F"], ["payRanges", "Pay ranges for 3 / 4 / 5 terrains (lo-hi)"],
   ["pointsByGrade", "Planet points S..F"], ["stockPerPoints", "Run points per 1 Stock"],
   ["#", "STORY"],
-  ["quotasG1", "Galaxy 1 quotas L1-L4, boss"], ["quotasG2", "Galaxy 2 quotas"], ["quotasG3", "Galaxy 3 quotas"], ["galaxyTerrains", "Terrains per order, galaxy 1/2/3"],
-  ["sizeRangeG1", "Galaxy 1 planet size % (min, max)"], ["sizeRangeG2", "Galaxy 2 planet size %"], ["sizeRangeG3", "Galaxy 3 planet size %"],
+  ["quotasG1", "Galaxy 1 quotas L1-L3, boss"], ["quotasG2", "Galaxy 2 quotas"], ["quotasG3", "Galaxy 3 quotas"], ["galaxyTerrains", "Terrains per order, galaxy 1/2/3/4"],
+  ["quotasG4", "Galaxy 4 quotas"], ["sizeVarRange", "Planet size % when sizes vary (min, max)"],
   ["#", "TIER 2 / 3"],
-  ["tier2SlotChance", "Chance a slot is tier 2/3 (0-1)"], ["tier2Bonus", "Tier-2 bonus credits per slot"], ["tier3Bonus", "Tier-3 bonus credits per slot"], ["mixMode", "MIX button", ["toggle", "hold"]],
+  ["tier2SlotChance", "Chance a slot is tier 2/3 (0-1)"], ["tier2MultPct", "Pay % for 0,1,2,3,4+ tier-2 slots (tier 3 = 2)"], ["featuredWeight", "New-galaxy terrains: x likelier"],
   ["arcadeTier2Unlocked", "Arcade tier-2 unlocked"],
   ["#", "STORE"],
-  ["storeSlots", "Store slots"], ["priceBot", "Price: bot"], ["priceMix", "Price: mix recipe"], ["priceBrush", "Price: brush +15%"], ["priceTime", "Price: +10 seconds"],
-  ["pricePeek", "Price: peek"], ["priceAuto", "Price: auto-finish"], ["priceSteady", "Price: steady payout"], ["maxBrushStacks", "Max brush stacks"], ["maxTimeStacks", "Max time stacks"],
+  ["storeSlots", "Store slots"], ["priceBrush", "Price: brush +15%"], ["priceTime", "Price: +10 seconds"],
+  ["pricePeek", "Price: peek"], ["priceAuto", "Price: auto-finish"], ["priceSteady", "Price: steady payout"], ["priceWell", "Price: second well"], ["priceCalm", "Price: calm token"],
+  ["priceSkips", "Price: free skips"], ["priceBoost", "Price: multiplier boost"], ["priceShield", "Price: quota shield"],
+  ["freeSkipCount", "Free skips per level"], ["freeSkipSec", "Seconds per free skip"], ["shieldMargin", "Quota shield covers a miss of up to"],
+  ["maxBrushStacks", "Max brush stacks"], ["maxTimeStacks", "Max time stacks"],
   ["brushStackMul", "Brush multiplier per stack"], ["timeStackSec", "Seconds per time stack"], ["peekSec", "Peek seconds"], ["autoFinishPct", "Auto-finish threshold %"],
   ["#", "HQ PRICES (STOCK)"],
-  ["hqStartBot", "Starting bot (each)"], ["hqSlots", "4 store slots"], ["hqReroll", "Free store reroll"], ["hqHeadStart", "Head start time"], ["hqBigBrush", "Bigger starting brush"], ["hqSuns", "Sun styles"], ["hqHats", "Alien hats"],
+  ["hqWell2", "Start with 2 wells"], ["hqSlots", "4 store slots"], ["hqReroll", "Free store reroll"], ["hqHeadStart", "Head start time"], ["hqBigBrush", "Bigger starting brush"], ["hqSuns", "Sun styles"], ["hqHats", "Alien hats"],
   ["#", "BOSS MODIFIERS"],
   ["modHidden", "Hidden order"], ["hiddenShowSec", "  % visible for sec"], ["modShrink", "Shrinking brush"], ["shrinkToPct", "  shrinks to %"],
   ["modMeteors", "Meteors"], ["meteorEverySec", "  every sec"], ["meteorWarnSec", "  warning sec"], ["meteorSizeMul", "  size x brush"],
   ["modSpin", "Spinning planet"], ["spinDegPerSec", "  degrees per sec"], ["modMirror", "Mirror brush"], ["modRush", "Rush"], ["rushSeconds", "  rush seconds"], ["modVip", "VIP"],
   ["modFickle", "Fickle client"], ["fickleShiftMin", "  shift min"], ["fickleShiftMax", "  shift max"], ["fickleOrderSec", "  assumed order length sec"],
-  ["modFog", "Fog"], ["fogRadiusMul", "  visible radius x brush"], ["fogFadeSec", "  fade sec"], ["modLocked", "Locked palette"], ["lockedCount", "  terrains locked"], ["lockedEverySec", "  rotates every sec"]
+  ["modFog", "Fog"], ["fogRadiusMul", "  visible radius x brush"], ["fogFadeSec", "  fade sec"], ["modLocked", "Locked palette"], ["lockedCount", "  terrains locked"], ["lockedEverySec", "  rotates every sec"], ["modSix", "Six terrains"]
 ];
 var settingsFrom = "start";
 function refreshStart() {
-  $("stockLine").textContent = "STOCK " + META.stock + " · BEST RUN " + META.best + " PTS";
+  var ab = META.bestArc[arcadeKey()];
+  $("stockLine").innerHTML = "HIGH SCORES &middot; STORY <b>" + META.best + " PTS</b> &middot; ARCADE <b>" + (ab === undefined ? "-" : ab + " MC") + "</b><br><small>STOCK " + META.stock + " &middot; arcade score is for your current arcade options</small>";
   $("storyBtn").textContent = RUN ? "RESUME STORY" : "STORY";
   $("storyBtn").style.fontSize = RUN ? "20px" : "";
   $("musicBtn").textContent = "MUSIC: " + STYLE_NAMES[CONFIG.musicStyle];
@@ -602,12 +805,12 @@ function buildSettings() {
 }
 function buildDev() { // owner testing tools
   var d = $("devTools"), force = RUN && RUN.force;
-  d.innerHTML = '<div class="sech">DEV TOOLS</div><div class="note" id="devMsg">' + (RUN ? "run: level " + (RUN.level + 1) + " of 15 &middot; " + RUN.wallet + " credits" : "no story run in progress") + " &middot; stock " + META.stock + "</div>" +
-    '<div class="devrow"><button data-d="cred">+100 CREDITS</button><button data-d="stock">+50 STOCK</button><button data-d="own">OWN ALL BOTS + RECIPES</button></div>' +
-    '<div class="devrow"><input id="devLvl" type="text" inputmode="decimal" value="' + (RUN ? RUN.level + 1 : 1) + '"><button data-d="jump">JUMP TO LEVEL (1-15)</button></div>' +
+  d.innerHTML = '<div class="sech">DEV TOOLS</div><div class="note" id="devMsg">' + (RUN ? "run: level " + (RUN.level + 1) + " of " + LEVELS + " &middot; comps: " + RUN.comps.join(", ") + " &middot; " + RUN.wallet + " credits" : "no story run in progress") + " &middot; stock " + META.stock + "</div>" +
+    '<div class="devrow"><button data-d="cred">+100 CREDITS</button><button data-d="stock">+50 STOCK</button><button data-d="own">OWN ALL BOTS + RECIPES</button><button data-d="seen">RESET SEEN EXPLAINERS</button></div>' +
+    '<div class="devrow"><input id="devLvl" type="text" inputmode="decimal" value="' + (RUN ? RUN.level + 1 : 1) + '"><button data-d="jump">JUMP TO LEVEL (1-' + LEVELS + ')</button></div>' +
     '<div class="note">force a boss modifier on the next level played:</div><div class="devrow">' + MODS.map(function (m) { return '<button data-f="' + m + '"' + (force === m ? ' class="pri"' : "") + ">" + MOD_INFO[m][0] + "</button>"; }).join("") + "</div>" +
     '<div class="devrow"><button data-d="rrun">RESET RUN</button><button data-d="rmeta">RESET META PROGRESS</button></div>';
-  function need() { if (!RUN) { RUN = newRun(META, CONFIG, makeRng(newSeed())); } }
+  function need() { if (!RUN) { RUN = newRun(META, CONFIG, makeRng(newSeed())); enterGalaxy(RUN, 0, CONFIG, makeRng(newSeed())); } }
   var armed = false;
   Array.prototype.forEach.call(d.querySelectorAll("[data-d]"), function (b) {
     b.onclick = function () {
@@ -615,8 +818,9 @@ function buildDev() { // owner testing tools
       if (a === "cred") { need(); RUN.wallet += 100; }
       else if (a === "stock") { META.stock += 50; saveMeta(); }
       else if (a === "own") { need(); RUN.owned = allOwned(); }
-      else if (a === "jump") { need(); RUN.level = Math.max(0, Math.min(LEVELS - 1, (parseInt($("devLvl").value, 10) || 1) - 1)); }
+      else if (a === "jump") { need(); RUN.level = Math.max(0, Math.min(LEVELS - 1, (parseInt($("devLvl").value, 10) || 1) - 1)); catchUpGalaxies(RUN, CONFIG, makeRng(newSeed())); }
       else if (a === "rrun") { RUN = null; }
+      else if (a === "seen") { META.seen = {}; saveMeta(); }
       else if (a === "rmeta") { if (!armed) { armed = true; b.textContent = "TAP AGAIN TO WIPE STOCK + UNLOCKS"; return; } META = newMeta(); saveMeta(); }
       saveRun(); AudioSys.sfx("coin"); buildDev();
     };
@@ -643,7 +847,8 @@ function updateOrderUI(slide) {
   var a = round.queue[0], n = round.queue[1];
   $("svgActive").innerHTML = alienSVG(a, "a"); $("svgNext").innerHTML = alienSVG(n, "n");
   $("custName").textContent = a.name;
-  $("payActive").textContent = (a.basePay + a.bonus) + " MC"; $("payNext").textContent = (n.basePay + n.bonus) + " MC";
+  function pay(o) { return (o.basePay + o.bonus) + " MC" + (o.mult > 100 ? " x" + o.mult / 100 : ""); }
+  $("payActive").textContent = pay(a); $("payNext").textContent = pay(n);
   $("orderText").innerHTML = a.slots.map(function (s) {
     return '<div class="oline">' + chip(s.terrain) + '<span class="pc">' + (hiddenShown ? "??" : s.pct) + '%</span><span class="nm" style="color:' + TCOL[s.terrain] + '">' + tname(s.terrain) + "</span></div>";
   }).join("");
@@ -655,9 +860,9 @@ function updateTimer() {
   if (s === lastSecShown) return;
   lastSecShown = s;
   var m = Math.floor(s / 60), ss = s % 60;
-  $("timer").textContent = (m < 10 ? "0" : "") + m + ":" + (ss < 10 ? "0" : "") + ss;
+  $("timer").textContent = spec && spec.practice ? "--:--" : (m < 10 ? "0" : "") + m + ":" + (ss < 10 ? "0" : "") + ss;
   $("timer").classList.toggle("low", s <= 5 && phase === "play");
-  if (phase === "play") {
+  if (phase === "play" && !(spec && spec.practice)) {
     if (s <= 5 && s > 0) AudioSys.sfx("tick");
     AudioSys.setTempo(s <= 10 ? 1.18 : 1);
   }
@@ -700,6 +905,7 @@ function openSettings(from) { settingsFrom = from; buildSettings(); show("settin
 $("storyBtn").onclick = function () { AudioSys.init(); AudioSys.sfx("tap"); startStory(false); };
 $("arcadeBtn").onclick = function () { AudioSys.init(); AudioSys.sfx("tap"); pageArcade(); };
 $("hqBtn").onclick = function () { AudioSys.init(); AudioSys.sfx("tap"); pageHQ(); };
+$("tutBtn").onclick = function () { AudioSys.init(); AudioSys.sfx("tap"); tutorial(); };
 $("gearBtn").onclick = function () { AudioSys.init(); AudioSys.music("title"); AudioSys.sfx("tap"); openSettings("start"); };
 $("muteBtn").onclick = function () { AudioSys.init(); AudioSys.toggleMute(); AudioSys.music("title"); muteLabels(); };
 $("skip").addEventListener("pointerdown", function (e) { e.preventDefault(); e.stopPropagation(); doSkip(); });

@@ -1,5 +1,5 @@
 "use strict";
-var VERSION = "v1.0 build 2026-11-15 15:30 (story + arcade)";
+var VERSION = "v1.1 build 2026-11-25 (4 galaxies + mixing wells)";
 
 /* ================= PURE LOGIC (no DOM) - tested by logic.test.mjs ================= */
 // THE one tunable object. Everything here is live-editable in the settings panel.
@@ -17,7 +17,7 @@ var CONFIG_DEFAULTS = {
   gradeMaxSum: [4, 10, 18, 28, 40], // S, A, B, C, D (inclusive); above = F
   payPct: [125, 100, 75, 50, 25, 0],
   bonusMC: [10, 5, 3, 1, 0, -5],
-  payRanges: [[3, 8], [7, 12], [9, 15]],      // 3, 4, 5 terrains
+  payRanges: [[3, 8], [7, 12], [9, 15], [12, 18]], // 3, 4, 5, 6 terrains
   skipEnabled: true,
   skipPenaltySec: 0,
   debugLivePct: false,
@@ -27,25 +27,25 @@ var CONFIG_DEFAULTS = {
   // ----- story -----
   pointsByGrade: [10, 7, 5, 3, 1, 0],
   stockPerPoints: 10,
-  quotasG1: [10, 12, 14, 16, 18],
-  quotasG2: [18, 20, 22, 24, 28],
-  quotasG3: [26, 28, 30, 32, 38],
-  galaxyTerrains: [3, 4, 5],
-  sizeRangeG1: [65, 100],
-  sizeRangeG2: [75, 100],
-  sizeRangeG3: [75, 100],
+  quotasG1: [10, 12, 14, 16],       // L1-L3, boss
+  quotasG2: [16, 18, 20, 24],
+  quotasG3: [22, 24, 26, 30],
+  quotasG4: [28, 30, 32, 38],
+  galaxyTerrains: [3, 4, 5, 5],
+  sizeVarRange: [65, 100],          // planet size % once the "planets come in sizes" complication is drawn
   // ----- tier 2 / 3 -----
   tier2SlotChance: 0.35,
-  tier2Bonus: 2,
-  tier3Bonus: 4,
-  mixMode: "toggle",                // toggle | hold
+  tier2MultPct: [100, 125, 150, 175, 200], // credit multiplier on base pay for 0-4+ tier-2 slots (a tier-3 slot counts 2)
+  featuredWeight: 3,                // terrains new in this galaxy are this many times likelier in orders
   // ----- store -----
   storeSlots: 3,
-  priceBot: 25, priceMix: 15, priceBrush: 20, priceTime: 20, pricePeek: 15, priceAuto: 20, priceSteady: 15,
+  priceBrush: 20, priceTime: 20, pricePeek: 15, priceAuto: 20, priceSteady: 15,
+  priceWell: 25, priceCalm: 20, priceSkips: 15, priceBoost: 20, priceShield: 25,
   maxBrushStacks: 3, maxTimeStacks: 3,
   brushStackMul: 1.15, timeStackSec: 10, peekSec: 5, autoFinishPct: 95,
+  freeSkipCount: 2, freeSkipSec: 3, shieldMargin: 3,
   // ----- HQ (Stock prices) -----
-  hqStartBot: 8, hqSlots: 10, hqReroll: 6, hqHeadStart: 6, hqBigBrush: 5, hqSuns: 3, hqHats: 3,
+  hqWell2: 10, hqSlots: 10, hqReroll: 6, hqHeadStart: 6, hqBigBrush: 5, hqSuns: 3, hqHats: 3,
   // ----- arcade -----
   arcadeCount: 3,                   // 3 | 4 | 5 | 0 = random per order
   randomShapes: false,
@@ -61,7 +61,8 @@ var CONFIG_DEFAULTS = {
   modVip: true,
   modFickle: true, fickleShiftMin: 5, fickleShiftMax: 10, fickleOrderSec: 15,
   modFog: true, fogRadiusMul: 2, fogFadeSec: 1.5,
-  modLocked: true, lockedCount: 2, lockedEverySec: 10
+  modLocked: true, lockedCount: 2, lockedEverySec: 10,
+  modSix: true
 };
 function T(id, name, color, tier) { return { id: id, name: name, color: color, tier: tier }; }
 var TERRAINS = [
@@ -109,6 +110,14 @@ function mixOut(cur, id, owned) {
   for (var i = 0; i < MIXES.length; i++) { var m = MIXES[i]; if (owned.mixes[m.id] && ((m.a === cur && m.b === id) || (m.b === cur && m.a === id))) return m.out; }
   return 0;
 }
+/* ----- mixing wells: terrains are combined in a well, then the well is painted like a swatch ----- */
+function wellDrop(cur, id, owned) { // drop terrain id into a well holding cur -> new well content (0 = empty)
+  if (!id) return 0;
+  return (cur && mixOut(cur, id, owned)) || id; // a recipe combines; anything else overwrites
+}
+function wellBot(cur, bot, owned) { return cur ? botOut(bot, cur, owned) : 0; } // 0 = no recipe (well unchanged)
+function tier2Count(slots) { var n = 0; slots.forEach(function (s) { var t = TERRAINS[s.terrain].tier; n += t === 3 ? 2 : t === 2 ? 1 : 0; }); return n; }
+function tier2Mult(count, boost, cfg) { var k = count > 0 ? count + (boost ? 1 : 0) : 0, m = cfg.tier2MultPct; return m[Math.min(m.length - 1, k)]; }
 function baseInputs(id, out) { // the base terrains (1-6) needed to make a terrain
   out = out || {};
   if (id >= 1 && id <= 6) { out[id] = true; return out; }
@@ -209,6 +218,7 @@ var SHAPES = {
     return heartFn(u * 1.2, (v + 1) * 1.5 - 1) || (v >= 0.3 && v <= 0.96 && Math.abs(u) <= 0.1 + 0.3 * Math.pow((v - 0.3) / 0.66, 2));
   },
   star: function (u, v) { return inPoly(POLY.star, u, v); },
+  donut: function (u, v) { var q = u * u + v * v; return q <= 1 && q >= 0.16; },
   crescent: function (u, v) { return u * u + v * v <= 1 && !disc(u, v, 0.48, 0, 0.84); },
   cross: function (u, v) { return Math.abs(u) <= 0.36 || Math.abs(v) <= 0.36; },
   triangle: function (u, v) { return inPoly(POLY.triangle, u, v); },
@@ -268,24 +278,35 @@ function overallGrade(gis, cfg) {
 }
 
 var SHAPES_SIMPLE = ["circle", "square", "rectangle", "oval", "diamond", "pentagon", "hexagon", "octagon", "triangle", "semicircle"];
+var SHAPE_SETS = { // story complications (circle is always in the mix)
+  basic: ["square", "rectangle", "oval", "triangle", "pentagon", "hexagon", "octagon", "semicircle", "donut", "kite"],
+  suits: ["heart", "club", "spade", "diamond"],
+  long: ["cross", "crescent", "star", "teardrop", "cloud"]
+};
 function systemName(rng) {
   var n = PLANET_A[randInt(rng, 0, PLANET_A.length - 1)] + PLANET_B[randInt(rng, 0, PLANET_B.length - 1)], k = randInt(rng, 0, 5);
   return k === 0 ? "The " + n + " Expanse" : n + [" System", " System", " Cluster", " Reach", " Belt"][k - 1];
 }
 
-/* ----- orders. spec = { n (0 = random 3-5), shapes[], sizeMin, sizeMax (%), tier2, owned } ----- */
+/* ----- orders. spec = { n (0 = random 3-5), shapes[], sizeMin, sizeMax (%), tier2, owned, featured[], multBoost, six } ----- */
+function pickWeighted(cand, featured, w, rng) {
+  var tot = 0, i, ws = cand.map(function (t) { var x = featured && featured.indexOf(t) >= 0 ? w : 1; tot += x; return x; }), r = rng() * tot;
+  for (i = 0; i < cand.length; i++) { r -= ws[i]; if (r < 0) return cand[i]; }
+  return cand[cand.length - 1];
+}
 function generateOrder(spec, cfg, rng) {
-  var n = spec.n ? spec.n : randInt(rng, 3, 5), ids = shuffle([1, 2, 3, 4, 5, 6], rng).slice(0, n), i, bonus = 0;
-  var mk = spec.tier2 ? makeableList(spec.owned) : [];
+  var six = !!spec.six, n = six ? 6 : spec.n ? spec.n : randInt(rng, 3, 5), ids = shuffle([1, 2, 3, 4, 5, 6], rng).slice(0, n), i;
+  var mk = spec.tier2 && !six ? makeableList(spec.owned) : [];
   if (mk.length) for (i = 0; i < n; i++) if (rng() < cfg.tier2SlotChance) {
     var cand = mk.filter(function (t) { return ids.indexOf(t) < 0; });
-    if (cand.length) { ids[i] = cand[randInt(rng, 0, cand.length - 1)]; bonus += TERRAINS[ids[i]].tier === 3 ? cfg.tier3Bonus : cfg.tier2Bonus; }
+    if (cand.length) ids[i] = pickWeighted(cand, spec.featured, Math.max(1, cfg.featuredWeight), rng);
   }
   var pcts = splitPcts(n, cfg.minTargetPct, cfg.maxTargetPct, rng), slots = [], big = ids[0], bigPct = -1;
   for (i = 0; i < n; i++) { slots.push({ terrain: ids[i], pct: pcts[i] }); if (pcts[i] > bigPct) { bigPct = pcts[i]; big = ids[i]; } }
-  var pr = cfg.payRanges[n - 3], shapes = spec.shapes && spec.shapes.length ? spec.shapes : ["circle"];
+  var pr = cfg.payRanges[Math.min(cfg.payRanges.length - 1, n - 3)], shapes = spec.shapes && spec.shapes.length ? spec.shapes : ["circle"];
+  var basePay = randInt(rng, pr[0], pr[1]), mult = tier2Mult(tier2Count(slots), spec.multBoost, cfg);
   var o = {
-    n: n, slots: slots, basePay: randInt(rng, pr[0], pr[1]), bonus: bonus, tint: big,
+    n: n, slots: slots, basePay: basePay, mult: mult, bonus: Math.ceil(basePay * mult / 100 - 1e-9) - basePay, tint: big,
     look: { head: randInt(rng, 0, 2), eyes: randInt(rng, 1, 3), antenna: randInt(rng, 0, 2) },
     shape: shapes[randInt(rng, 0, shapes.length - 1)],
     size: randInt(rng, spec.sizeMin || 100, spec.sizeMax || 100) / 100
@@ -298,12 +319,17 @@ function generateOrder(spec, cfg, rng) {
 function autoFill(grid, order) {
   var G = grid.G, cells = new Uint8Array(grid.cells), counts = countGrid(grid), total = grid.total, blanks = [], i, k, s;
   for (i = 0; i < cells.length; i++) if (grid.inside[i] && !cells[i]) blanks.push(i);
-  var def = order.slots.map(function (sl) { return sl.pct / 100 * total - counts[sl.terrain]; }), alloc = {}, left = blanks.length;
-  while (left > 0) { // one cell at a time to the most under-target terrain
-    var best = -1, bv = 0.5;
-    for (s = 0; s < def.length; s++) if (def[s] >= bv) { bv = def[s]; best = s; }
-    if (best < 0) break;
-    var t = order.slots[best].terrain; alloc[t] = (alloc[t] || 0) + 1; def[best]--; left--;
+  // every blank gets painted, so the final percentages are of the whole planet. One cell at a time, give it to the ordered
+  // terrain that leaves the lowest score error (ties: the most under-target terrain). Cells never go to unordered terrains.
+  var cnt = order.slots.map(function (sl) { return counts[sl.terrain]; }), alloc = {}, left = blanks.length;
+  function err() { var e = 0; for (var q = 0; q < cnt.length; q++) e += Math.abs(pctOf(cnt[q], total) - order.slots[q].pct); return e; }
+  while (left > 0 && cnt.length) {
+    var best = 0, be = Infinity, bd = -Infinity;
+    for (s = 0; s < cnt.length; s++) {
+      cnt[s]++; var e = err(), d = order.slots[s].pct / 100 * total - (cnt[s] - 1); cnt[s]--;
+      if (e < be || (e === be && d > bd)) { be = e; bd = d; best = s; }
+    }
+    var t = order.slots[best].terrain; alloc[t] = (alloc[t] || 0) + 1; cnt[best]++; left--;
   }
   function nb(i) { var x = i % G, o = []; if (x > 0) o.push(i - 1); if (x < G - 1) o.push(i + 1); if (i >= G) o.push(i - G); if (i + G < cells.length) o.push(i + G); return o; }
   var changed = true;
@@ -323,20 +349,22 @@ function autoFill(grid, order) {
 }
 
 /* ----- boss modifiers ----- */
-var MODS = ["hidden", "shrink", "meteors", "spin", "mirror", "rush", "vip", "fickle", "fog", "locked"];
+var MODS = ["hidden", "shrink", "meteors", "spin", "mirror", "rush", "vip", "fickle", "fog", "locked", "six"];
 var MOD_INFO = {
   hidden: ["HIDDEN ORDER", "Percentages vanish after a few seconds"], shrink: ["SHRINKING BRUSH", "Your brush shrinks all round"],
   meteors: ["METEORS", "Chunks of your planet get blasted blank"], spin: ["SPINNING PLANET", "The planet rotates while you paint"],
   mirror: ["MIRROR BRUSH", "Every dab is mirrored left-right"], rush: ["RUSH", "A much shorter clock"],
   vip: ["VIP CLIENTS", "Below grade B earns nothing"], fickle: ["FICKLE CLIENT", "Targets change mid-order"],
-  fog: ["FOG", "You only see near your finger"], locked: ["LOCKED PALETTE", "Two terrains are locked at a time"]
+  fog: ["FOG", "You only see near your finger"], locked: ["LOCKED PALETTE", "Two terrains are locked at a time"],
+  six: ["SIX TERRAINS", "Every order wants all six base terrains"]
 };
 function modKey(m) { return "mod" + m.charAt(0).toUpperCase() + m.slice(1); }
 function enabledMods(cfg) { return MODS.filter(function (m) { return cfg[modKey(m)]; }); }
 function pickBossMods(cfg, rng) { // one per galaxy boss; the last boss gets two different ones
-  var pool = enabledMods(cfg), out = [[], [], []];
+  var pool = enabledMods(cfg), out = [], g;
+  for (g = 0; g < GALAXIES; g++) out.push([]);
   if (!pool.length) return out;
-  for (var g = 0; g < 3; g++) { var p = shuffle(pool.slice(), rng); out[g] = p.slice(0, g === 2 ? 2 : 1); }
+  for (g = 0; g < GALAXIES; g++) { var p = shuffle(pool.slice(), rng); out[g] = p.slice(0, g === GALAXIES - 1 ? 2 : 1); }
   return out;
 }
 function fickleShift(order, cfg, rng) { // two targets trade 5-10 points; still sums to 100, nothing below 1
@@ -369,7 +397,7 @@ function createPaintRound(cfg, spec, rng) {
     timeLeft: secs, seconds: secs, elapsed: 0, planetStart: 0, over: false, endReason: null,
     queue: [generateOrder(spec, cfg, rng), generateOrder(spec, cfg, rng)], results: [], skipped: 0, points: 0,
     brushMul: spec.brushMul || 1, autoFinish: !!spec.autoFinish, steady: !!spec.steady,
-    events: [], locked: [], meteor: null, meteorNext: cfg.meteorEverySec
+    events: [], locked: [], meteor: null, meteorNext: cfg.meteorEverySec, freeSkips: spec.freeSkips || 0
   };
   armOrder(r);
   return r;
@@ -390,7 +418,7 @@ function meteorStrike(r, m) {
 }
 function roundTick(r, dt) {
   if (r.over) return;
-  r.timeLeft -= dt; r.elapsed += dt;
+  if (!r.spec.practice) r.timeLeft -= dt; r.elapsed += dt;
   if (r.timeLeft <= 0) { r.elapsed += r.timeLeft; r.timeLeft = 0; r.over = true; r.endReason = "time"; return; }
   if (r.elapsed >= r.fickleAt) { r.fickleAt = Infinity; if (fickleShift(r.queue[0], r.cfg, r.rng)) r.events.push("fickle"); }
   if (r.mod.meteors) {
@@ -407,7 +435,8 @@ function roundTick(r, dt) {
 function roundSkip(r) {
   if (r.over || !r.cfg.skipEnabled) return false;
   r.skipped++; advanceOrder(r);
-  if (r.cfg.skipPenaltySec > 0) roundTick(r, r.cfg.skipPenaltySec);
+  if (r.freeSkips > 0) { r.freeSkips--; r.timeLeft += r.cfg.freeSkipSec; r.events.push("freeSkip"); }
+  else if (r.cfg.skipPenaltySec > 0) roundTick(r, r.cfg.skipPenaltySec);
   return true;
 }
 // One dab at (cx,cy), radius rad, in grid squares. Every square the brush touches at all changes whole.
@@ -462,94 +491,142 @@ function summarizeRound(r) {
   };
 }
 
-/* ----- story run: 3 galaxies x (4 levels + boss) ----- */
-var LEVELS = 15;
-function newMeta() { return { stock: 0, hq: {}, best: 0, runs: 0, arcadeTier2Unlocked: false }; }
-function levelInfo(level) { return { g: Math.floor(level / 5), l: level % 5, boss: level % 5 === 4 }; }
+/* ----- story run: 4 galaxies x (3 levels + boss). Galaxy 1 is always the same; galaxies 2-4 each draw one complication ----- */
+var GALAXIES = 4, LPG = 4, LEVELS = GALAXIES * LPG;
+var COMPLICATIONS = ["bot:hot", "bot:chill", "bot:low", "bot:high", "shapes:basic", "shapes:suits", "shapes:long", "size"];
+var COMP_INFO = {
+  "bot:hot": ["HOT BOT ONLINE", "Heats the terrain in a well"], "bot:chill": ["CHILL BOT ONLINE", "Freezes the terrain in a well"],
+  "bot:low": ["LOW BOT ONLINE", "Sinks the terrain in a well"], "bot:high": ["HIGH BOT ONLINE", "Raises the terrain in a well"],
+  "shapes:basic": ["ODD-SHAPED PLANETS", "Squares, triangles, donuts and other polygons join the circles"],
+  "shapes:suits": ["CARD-SUIT PLANETS", "Hearts, clubs, spades and diamonds join the line-up"],
+  "shapes:long": ["STRETCHED PLANETS", "Crosses, moons, stars, teardrops and clouds"],
+  "size": ["PLANETS COME IN SIZES", "Planets range from small to full size. Your brush stays the same, so small ones fill fast"]
+};
+var GALAXY_NAMES = {
+  "bot:hot": ["The Scorch Nebula", "Cinder Reach", "The Kiln Cluster"], "bot:chill": ["The Frostbite Belt", "Glacier Drift", "The Shiver Expanse"],
+  "bot:low": ["The Sunken Deep", "Basin Reach", "The Undertow Cluster"], "bot:high": ["The Summit Spiral", "Peak Reach", "The Altitude Belt"],
+  "shapes:basic": ["The Geometry Sector", "Polygon Reach", "The Angular Belt"], "shapes:suits": ["The Casino Cluster", "High Stakes Expanse", "The Full House Nebula"],
+  "shapes:long": ["The Contortion Nebula", "Stretch Reach", "The Noodle Expanse"], "size": ["The Scale Drift", "Variable Reach", "The One-Size-Fits-Some Cluster"]
+};
+var HOME_GALAXY = "The Home Spiral";
+function newMeta() { return { stock: 0, hq: {}, best: 0, runs: 0, arcadeTier2Unlocked: false, seen: {}, bestArc: {} }; }
+function levelInfo(level) { return { g: Math.floor(level / LPG), l: level % LPG, boss: level % LPG === LPG - 1 }; }
 function quotaFor(level, cfg) { var li = levelInfo(level); return cfg["quotasG" + (li.g + 1)][li.l]; }
 function newRun(meta, cfg, rng) {
-  var owned = emptyOwned();
-  BOTS.forEach(function (b) { if (meta.hq["startBot:" + b]) owned.bots[b] = true; });
-  return { level: 0, wallet: 0, points: 0, owned: owned, items: { brush: 0, time: 0, peek: false, auto: false, steady: false },
-    bossMods: pickBossMods(cfg, rng), force: null, over: false, won: false, credits: 0 };
+  return { v: 2, level: 0, wallet: 0, points: 0, owned: emptyOwned(),
+    items: { brush: 0, time: 0, peek: false, auto: false, steady: false, well2: false, calm: false, skips: false, boost: false, shield: 0 },
+    comps: shuffle(COMPLICATIONS.slice(), rng).slice(0, GALAXIES - 1), bossMods: pickBossMods(cfg, rng),
+    galaxies: [], featured: [], force: null, over: false, won: false, credits: 0 };
+}
+function runComps(run, g) { return run.comps.slice(0, Math.max(0, g)); } // complications active in galaxy g (they stack)
+// enter galaxy g: unlock its bot and one random mix recipe; returns the intro record (stored on the run)
+function enterGalaxy(run, g, cfg, rng) {
+  if (run.galaxies[g]) return run.galaxies[g];
+  var before = makeableList(run.owned), comp = g > 0 ? run.comps[g - 1] : null, mix = null;
+  if (comp && comp.indexOf("bot:") === 0) run.owned.bots[comp.slice(4)] = true;
+  if (g > 0) {
+    var cand = MIXES.filter(function (m) { return !run.owned.mixes[m.id] && makeable(m.a, run.owned) && makeable(m.b, run.owned); });
+    if (cand.length) { mix = cand[randInt(rng, 0, cand.length - 1)].id; run.owned.mixes[mix] = true; }
+  }
+  var after = makeableList(run.owned);
+  run.featured = after.filter(function (t) { return before.indexOf(t) < 0; });
+  var names = comp ? GALAXY_NAMES[comp] : null;
+  var info = { g: g, name: names ? names[randInt(rng, 0, names.length - 1)] : HOME_GALAXY, comp: comp, mix: mix, newTerrains: run.featured.slice(),
+    terrains: cfg.galaxyTerrains[g], moreTerrains: g > 0 && cfg.galaxyTerrains[g] > cfg.galaxyTerrains[g - 1] };
+  run.galaxies[g] = info;
+  return info;
+}
+function catchUpGalaxies(run, cfg, rng) { // make sure every galaxy up to the current one has been entered (dev jumps, old saves)
+  var g = levelInfo(run.level).g, out = [];
+  for (var k = 0; k <= g; k++) if (!run.galaxies[k]) out.push(enterGalaxy(run, k, cfg, rng));
+  return out;
 }
 function levelMods(run, level) {
   var li = levelInfo(level), m = li.boss ? (run.bossMods[li.g] || []).slice() : [];
+  if (li.boss && run.items.calm && m.length) m.pop(); // calm token cancels one
   if (run.force && level === run.level && m.indexOf(run.force) < 0) m.push(run.force);
   return m;
 }
+function storyShapes(comps) {
+  var s = ["circle"];
+  comps.forEach(function (c) { if (c.indexOf("shapes:") === 0) s = s.concat(SHAPE_SETS[c.slice(7)]); });
+  return s;
+}
+function wellCount(run, meta) { return 1 + ((run && run.items.well2) || (meta && meta.hq.well2) ? 1 : 0); }
 function levelSpec(run, meta, cfg) {
-  var li = levelInfo(run.level), mods = levelMods(run, run.level), g = li.g, sr = cfg["sizeRangeG" + (g + 1)];
+  var li = levelInfo(run.level), mods = levelMods(run, run.level), g = li.g, comps = runComps(run, g), sized = comps.indexOf("size") >= 0;
   var secs = (mods.indexOf("rush") >= 0 ? cfg.rushSeconds : cfg.roundSeconds) + run.items.time * cfg.timeStackSec + (meta.hq.headStart ? 10 : 0);
   return {
-    n: cfg.galaxyTerrains[g], shapes: g === 0 ? ["circle"] : g === 1 ? SHAPES_SIMPLE : SHAPE_NAMES, sizeMin: sr[0], sizeMax: sr[1],
-    tier2: true, owned: run.owned, seconds: secs, mods: mods, quota: quotaFor(run.level, cfg),
-    brushMul: Math.pow(cfg.brushStackMul, run.items.brush) * (meta.hq.bigBrush ? 1.15 : 1),
+    n: cfg.galaxyTerrains[g], six: mods.indexOf("six") >= 0, shapes: storyShapes(comps), sizeMin: sized ? cfg.sizeVarRange[0] : 100, sizeMax: sized ? cfg.sizeVarRange[1] : 100,
+    tier2: true, owned: run.owned, featured: run.featured || [], multBoost: !!run.items.boost, seconds: secs, mods: mods, quota: quotaFor(run.level, cfg),
+    brushMul: Math.pow(cfg.brushStackMul, run.items.brush) * (meta.hq.bigBrush ? 1.15 : 1), wells: wellCount(run, meta),
+    freeSkips: run.items.skips ? cfg.freeSkipCount : 0,
     autoFinish: run.items.auto, steady: run.items.steady, peek: run.items.peek, story: true, g: g, l: li.l, boss: li.boss
   };
 }
-function arcadeSpec(cfg, unlocked) {
+function arcadeSpec(cfg, unlocked, meta) {
   var t2 = !!cfg.arcadeTier2 && !!unlocked;
   return { n: cfg.arcadeCount | 0, shapes: cfg.randomShapes ? SHAPE_NAMES : ["circle"], sizeMin: cfg.randomShapes ? 75 : 100, sizeMax: 100,
-    tier2: t2, owned: t2 ? allOwned() : emptyOwned(), seconds: cfg.roundSeconds, mods: [], brushMul: 1, story: false };
+    tier2: t2, owned: t2 ? allOwned() : emptyOwned(), seconds: cfg.roundSeconds, mods: [], brushMul: 1, wells: wellCount(null, meta), story: false };
 }
+function practiceSpec() { return { n: 3, shapes: ["circle"], sizeMin: 80, sizeMax: 80, tier2: false, owned: emptyOwned(), seconds: 599, mods: [], brushMul: 1, wells: 1, story: false, practice: true }; }
 function finishLevel(run, sum, cfg) { // apply a finished level to the run
-  var quota = quotaFor(run.level, cfg), passed = sum.points >= quota;
+  var li = levelInfo(run.level), quota = quotaFor(run.level, cfg), passed = sum.points >= quota, shielded = false;
+  if (!passed && run.items.shield === 1 && quota - sum.points <= cfg.shieldMargin) { passed = true; shielded = true; run.items.shield = 2; }
+  if (li.boss && run.items.calm && (run.bossMods[li.g] || []).length) run.items.calm = false; // used up
   run.points += sum.points; run.wallet = Math.max(0, run.wallet + sum.total); run.credits += sum.total; run.force = null;
   if (!passed) run.over = true;
   else { run.level++; if (run.level >= LEVELS) { run.over = true; run.won = true; } }
-  return { passed: passed, quota: quota };
+  return { passed: passed, quota: quota, shielded: shielded, newGalaxy: passed && !run.over && run.level % LPG === 0 };
 }
 function stockFor(points, cfg) { return Math.floor(points / cfg.stockPerPoints); }
 function endRun(run, meta, cfg) { var s = stockFor(run.points, cfg); meta.stock += s; meta.runs++; if (run.points > meta.best) meta.best = run.points; return s; }
+function arcadeBest(meta, key, total) { var prev = meta.bestArc[key]; if (prev === undefined || total > prev) { meta.bestArc[key] = total; return true; } return false; }
 
-/* ----- store (credits) ----- */
+/* ----- store (credits). Bots and recipes are no longer sold: galaxies hand them out ----- */
 function storeItems(cfg) {
-  var out = [];
-  BOTS.forEach(function (b) {
-    var makes = Object.keys(BOT_RECIPES[b]).map(function (k) { return TERRAINS[BOT_RECIPES[b][k]].name; }).join(", ");
-    out.push({ id: "bot:" + b, name: BOT_NAMES[b], desc: "Makes " + makes, price: cfg.priceBot });
-  });
-  MIXES.forEach(function (m) { out.push({ id: "mix:" + m.id, name: TERRAINS[m.out].name + " RECIPE", desc: "MIX " + TERRAINS[m.a].name + " + " + TERRAINS[m.b].name, price: cfg.priceMix }); });
-  out.push({ id: "brush", name: "BRUSH +15%", desc: "Bigger brush (stacks)", price: cfg.priceBrush });
-  out.push({ id: "time", name: "+10 SECONDS", desc: "Longer clock on every remaining level (stacks)", price: cfg.priceTime });
-  out.push({ id: "peek", name: "PEEK", desc: "Once per level: live % readout for a few seconds", price: cfg.pricePeek });
-  out.push({ id: "auto", name: "AUTO-FINISH", desc: "Planets finish at " + cfg.autoFinishPct + "% and the gaps fill themselves", price: cfg.priceAuto });
-  out.push({ id: "steady", name: "STEADY PAYOUT", desc: "+1 credit per planet graded B or better", price: cfg.priceSteady });
-  return out;
+  return [
+    { id: "brush", name: "BRUSH +15%", desc: "Bigger brush (stacks)", price: cfg.priceBrush },
+    { id: "time", name: "+" + cfg.timeStackSec + " SECONDS", desc: "Longer clock on every remaining level (stacks)", price: cfg.priceTime },
+    { id: "peek", name: "PEEK", desc: "Once per level: live % readout for a few seconds", price: cfg.pricePeek },
+    { id: "auto", name: "AUTO-FINISH", desc: "At " + cfg.autoFinishPct + "% the planet colours its last squares for the best possible score", price: cfg.priceAuto },
+    { id: "steady", name: "STEADY PAYOUT", desc: "+1 credit per planet graded B or better", price: cfg.priceSteady },
+    { id: "well2", name: "SECOND WELL", desc: "Hold two mixes at once", price: cfg.priceWell },
+    { id: "calm", name: "CALM TOKEN", desc: "Cancels one modifier on the next boss level", price: cfg.priceCalm },
+    { id: "skips", name: "FREE SKIPS", desc: "Your first " + cfg.freeSkipCount + " skips each level give +" + cfg.freeSkipSec + " s", price: cfg.priceSkips },
+    { id: "boost", name: "MULTIPLIER BOOST", desc: "Tier-2 orders pay one step more (1 tier-2 pays x1.5)", price: cfg.priceBoost },
+    { id: "shield", name: "QUOTA SHIELD", desc: "Once per run: miss a quota by " + cfg.shieldMargin + " or less and still pass", price: cfg.priceShield }
+  ];
 }
-function itemEligible(run, id, cfg) {
-  var p = id.split(":");
-  if (p[0] === "bot") return !run.owned.bots[p[1]];
-  if (p[0] === "mix") { var m = MIXES.filter(function (x) { return x.id === p[1]; })[0]; return !!m && !run.owned.mixes[m.id] && makeable(m.a, run.owned) && makeable(m.b, run.owned); }
+function itemEligible(run, id, cfg, meta) {
   if (id === "brush") return run.items.brush < cfg.maxBrushStacks;
   if (id === "time") return run.items.time < cfg.maxTimeStacks;
+  if (id === "well2" && meta && meta.hq.well2) return false;
   return id in run.items && !run.items[id];
 }
 function storeOffers(run, meta, cfg, rng) {
-  var pool = storeItems(cfg).filter(function (it) { return itemEligible(run, it.id, cfg); }).map(function (it) { return it.id; });
+  var pool = storeItems(cfg).filter(function (it) { return itemEligible(run, it.id, cfg, meta); }).map(function (it) { return it.id; });
   return shuffle(pool, rng).slice(0, meta.hq.slots4 ? 4 : Math.max(1, cfg.storeSlots | 0));
 }
-function buyItem(run, id, cfg) {
+function buyItem(run, id, cfg, meta) {
   var it = storeItems(cfg).filter(function (x) { return x.id === id; })[0];
-  if (!it || !itemEligible(run, id, cfg) || run.wallet < it.price) return false;
+  if (!it || !itemEligible(run, id, cfg, meta) || run.wallet < it.price) return false;
   run.wallet -= it.price;
-  var p = id.split(":");
-  if (p[0] === "bot") run.owned.bots[p[1]] = true; else if (p[0] === "mix") run.owned.mixes[p[1]] = true;
-  else if (id === "brush" || id === "time") run.items[id]++; else run.items[id] = true;
+  if (id === "brush" || id === "time") run.items[id]++; else if (id === "shield") run.items.shield = 1; else run.items[id] = true;
   return true;
 }
 
 /* ----- HQ (Stock, permanent) ----- */
 function hqItems(cfg) {
-  var out = BOTS.map(function (b) { return { id: "startBot:" + b, name: "START WITH " + BOT_NAMES[b], desc: "Every run begins owning it", price: cfg.hqStartBot }; });
-  out.push({ id: "slots4", name: "4 STORE SLOTS", desc: "The store shows 4 items", price: cfg.hqSlots });
-  out.push({ id: "reroll", name: "FREE STORE REROLL", desc: "One free reroll per store visit", price: cfg.hqReroll });
-  out.push({ id: "headStart", name: "HEAD START", desc: "+10 s on every level", price: cfg.hqHeadStart });
-  out.push({ id: "bigBrush", name: "BIGGER STARTING BRUSH", desc: "Brush x1.15", price: cfg.hqBigBrush });
-  out.push({ id: "suns", name: "SUN STYLES", desc: "Cosmetic: rings, spots and pulsing suns", price: cfg.hqSuns });
-  out.push({ id: "hats", name: "ALIEN HATS", desc: "Cosmetic: customers wear hats", price: cfg.hqHats });
-  return out;
+  return [
+    { id: "well2", name: "START WITH 2 WELLS", desc: "Every run (and arcade) has a second mixing well", price: cfg.hqWell2 },
+    { id: "slots4", name: "4 STORE SLOTS", desc: "The store shows 4 items", price: cfg.hqSlots },
+    { id: "reroll", name: "FREE STORE REROLL", desc: "One free reroll per store visit", price: cfg.hqReroll },
+    { id: "headStart", name: "HEAD START", desc: "+10 s on every level", price: cfg.hqHeadStart },
+    { id: "bigBrush", name: "BIGGER STARTING BRUSH", desc: "Brush x1.15", price: cfg.hqBigBrush },
+    { id: "suns", name: "SUN STYLES", desc: "Cosmetic: rings, spots and pulsing suns", price: cfg.hqSuns },
+    { id: "hats", name: "ALIEN HATS", desc: "Cosmetic: customers wear hats", price: cfg.hqHats }
+  ];
 }
 function buyHQ(meta, id, cfg) {
   var it = hqItems(cfg).filter(function (x) { return x.id === id; })[0];
@@ -577,7 +654,6 @@ function sanitizeConfig() {
   CONFIG.GRID = Math.max(8, Math.min(200, CONFIG.GRID | 0));
   if (MUSIC_STYLES.indexOf(CONFIG.musicStyle) < 0) CONFIG.musicStyle = "chip";
   if (CONFIG.artStyle !== "classic") CONFIG.artStyle = "poster";
-  if (CONFIG.mixMode !== "hold") CONFIG.mixMode = "toggle";
   if ([0, 3, 4, 5].indexOf(CONFIG.arcadeCount) < 0) CONFIG.arcadeCount = 3;
   CONFIG.brushRadiusPct = Math.max(1, Math.min(200, CONFIG.brushRadiusPct));
   CONFIG.roundSeconds = Math.max(1, CONFIG.roundSeconds);
@@ -585,7 +661,7 @@ function sanitizeConfig() {
   CONFIG.canvasDiameterPct = Math.max(20, Math.min(100, CONFIG.canvasDiameterPct));
   CONFIG.stockPerPoints = Math.max(1, CONFIG.stockPerPoints);
   CONFIG.autoFinishPct = Math.max(1, Math.min(100, CONFIG.autoFinishPct));
-  ["sizeRangeG1", "sizeRangeG2", "sizeRangeG3"].forEach(function (k) {
+  ["sizeVarRange"].forEach(function (k) {
     var a = Math.max(20, Math.min(100, CONFIG[k][0])), b = Math.max(20, Math.min(100, CONFIG[k][1])); CONFIG[k] = [Math.min(a, b), Math.max(a, b)];
   });
 }

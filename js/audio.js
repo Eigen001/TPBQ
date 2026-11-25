@@ -260,6 +260,15 @@ var AudioSys = (function () {
   }
   function restyle() { var cur = songName ? songName.split(":")[1] : null; songName = "?"; music(cur); }
   function peak() { if (!ana) return 0; ana.getFloatTimeDomainData(anaBuf); var m = 0; for (var i = 0; i < anaBuf.length; i++) m = Math.max(m, Math.abs(anaBuf[i])); return m; }
+  // grade stings, S..F. notes: [start (half-beats), midi chord, length]. Each grade sits in its own key: E major high -> D -> C -> A minor-ish -> C minor low -> flat womp
+  var STINGS = [
+    { bpm: 150, v: "brass", notes: [[0, [76], 0.5], [0.5, [80], 0.5], [1, [83], 0.5], [1.5, [88], 0.5], [2, [92], 0.5], [3, [76, 80, 83, 88], 4], [3, [64], 4]], drums: "s-s-sskk--c" },
+    { bpm: 140, v: "brass", notes: [[0, [74], 0.5], [0.5, [78], 0.5], [1, [81], 0.5], [2, [74, 78, 81, 86], 3.5], [2, [62], 3.5]], drums: "s-ss-k--c" },
+    { bpm: 130, v: "p25", notes: [[0, [67], 0.5], [0.5, [72], 0.5], [1, [76], 0.5], [2, [72, 76, 79, 74], 3], [2, [60], 3]], drums: "k-s-k---" },
+    { bpm: 120, v: "p25", notes: [[0, [65], 0.5], [1, [69], 0.5], [2, [67, 70, 74], 1], [3, [65, 69, 72], 2.5], [3, [53], 2.5]], drums: "k---k-" },
+    { bpm: 100, v: "womp", notes: [[0, [63], 0.9], [1, [62], 0.9], [2, [61], 1.6], [3.8, [48, 51, 55], 2.4]], drums: "k-------k" },
+    { bpm: 84, v: "womp", notes: [[0, [58], 0.9], [1, [57], 0.9], [2, [56], 0.9], [3, [55], 2.6], [3, [43], 2.6]], drums: "" }
+  ];
   var SFX = {
     tap: function (t) { tone(sfxGain, "p50", 880, 0, t, 0.04, 0.12); },
     pickup: function (t) { tone(sfxGain, "p25", 520, 1040, t, 0.07, 0.14); },
@@ -291,6 +300,25 @@ var AudioSys = (function () {
       }
     },
     end: function (t) { tone(sfxGain, "sawtooth", 120, 100, t, 0.55, 0.2); tone(sfxGain, "p50", 123, 100, t, 0.55, 0.12); noise(sfxGain, t, 0.5, 0.12, "lowpass", 900); },
+    reel: function (t, a) { tone(sfxGain, "p12", 760 + ((a * 137) % 420), 0, t, 0.03, 0.09); noise(sfxGain, t, 0.02, 0.05, "highpass", 6000); },
+    drop: function (t) { tone(sfxGain, "triangle", 280, 620, t, 0.09, 0.25); tone(sfxGain, "sine", 900, 0, t + 0.07, 0.06, 0.08); },
+    sting: function (t, gi) { // end-of-music "button" for the overall grade: bright and high for S/A, down to flat and low for F
+      var S = STINGS[gi] || STINGS[5], b = 60 / S.bpm / 2;
+      S.notes.forEach(function (n) {
+        var at = t + n[0] * b, dur = n[2] * b;
+        n[1].forEach(function (m) {
+          if (S.v === "brass") synth({ t: at, f: hz(m), dur: dur, vol: 0.05, a: 0.012, decay: 0.6, r: 0.25, cut: 1100, cutEnd: 3600, cutT: 0.3, osc: [["sawtooth", -8, 1], ["sawtooth", 8, 1], ["square", 0, 0.3]], dest: sfxGain, send: 0.35 });
+          else if (S.v === "womp") tone(sfxGain, "sawtooth", hz(m), hz(m) * 0.94, at, dur, 0.1);
+          else tone(sfxGain, S.v, hz(m), 0, at, dur, 0.09);
+        });
+      });
+      (S.drums || "").split("").forEach(function (ch, i) {
+        var at = t + i * b / 2;
+        if (ch === "k") tone(sfxGain, "sine", 150, 45, at, 0.18, 0.45);
+        else if (ch === "s") noise(sfxGain, at, 0.14, 0.24, "bandpass", 1800);
+        else if (ch === "c") noise(sfxGain, at, 0.9, 0.12, "highpass", 5000);
+      });
+    },
     fanfare: function (t) { [60, 64, 67, 72, 67, 72, 76].forEach(function (m, i) { tone(sfxGain, "p25", hz(m), 0, t + i * 0.09, i === 6 ? 0.4 : 0.085, 0.13); }); }
   };
   function sfx(name, arg) { if (ctx && ctx.state === "running" && SFX[name]) try { SFX[name](ctx.currentTime + 0.005, arg); } catch (e) { } }
