@@ -59,21 +59,31 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
   const sum = ctx.summarizeRound(r);
   ok("2c credits = pay + overall bonus", sum.total === a.paid + b.paid + c.paid + sum.bonus && sum.t2 === 0 && a.paid === Math.ceil(a.basePay * 1.25 - 1e-9));
 }
-// ---------- 3. quota ----------
+// ---------- 3. quota (4 galaxies x 4 levels) ----------
 {
   const meta = ctx.newMeta();
-  let run = ctx.newRun(meta, cfg, rng(1)); run.level = 3; // G1 L4 quota 16
+  let run = ctx.newRun(meta, cfg, rng(1)); run.level = 3; // G1 boss quota 16
   let res = ctx.finishLevel(run, { points: 15, total: 20 }, cfg);
   ok("3a 15 vs quota 16 -> run over", res.quota === 16 && !res.passed && run.over && !run.won && run.level === 3, [res, run.level]);
   run = ctx.newRun(meta, cfg, rng(1)); run.level = 2; // quota 14
   res = ctx.finishLevel(run, { points: 15, total: 20 }, cfg);
   ok("3b 15 vs quota 14 -> continue", res.quota === 14 && res.passed && !run.over && run.level === 3 && run.wallet === 20 && run.points === 15);
-  run = ctx.newRun(meta, cfg, rng(1)); run.level = 14;
+  run = ctx.newRun(meta, cfg, rng(1)); run.level = 15;
   res = ctx.finishLevel(run, { points: 38, total: 1 }, cfg);
-  ok("3c beating the last boss wins the run", res.passed && run.over && run.won);
-  ok("3d quota table", [0, 4, 5, 9, 10, 14].map((l) => ctx.quotaFor(l, cfg)).join() === "10,18,18,28,26,38");
+  ok("3c beating the galaxy-4 boss wins the run", res.passed && run.over && run.won && ctx.LEVELS === 16);
+  ok("3d quota table", [0, 3, 4, 7, 8, 11, 12, 15].map((l) => ctx.quotaFor(l, cfg)).join() === "10,16,16,24,22,30,28,38");
   run = ctx.newRun(meta, cfg, rng(1)); ctx.finishLevel(run, { points: 99, total: -5 }, cfg);
   ok("3e wallet never negative", run.wallet === 0);
+  run = ctx.newRun(meta, cfg, rng(1)); run.level = 3; res = ctx.finishLevel(run, { points: 16, total: 0 }, cfg);
+  ok("3f passing a boss flags the next galaxy", res.newGalaxy && run.level === 4);
+  // quota shield
+  run = ctx.newRun(meta, cfg, rng(1)); run.items.shield = 1; run.level = 3;
+  res = ctx.finishLevel(run, { points: 13, total: 0 }, cfg);
+  ok("3g shield saves a miss by 3", res.passed && res.shielded && run.items.shield === 2);
+  run.level = 7; res = ctx.finishLevel(run, { points: 23, total: 0 }, cfg);
+  ok("3h shield works once per run", !res.passed && run.over);
+  run = ctx.newRun(meta, cfg, rng(1)); run.items.shield = 1; run.level = 3; res = ctx.finishLevel(run, { points: 12, total: 0 }, cfg);
+  ok("3i shield does not cover a miss by 4", !res.passed && run.items.shield === 1);
 }
 // ---------- 4. stock ----------
 {
@@ -124,41 +134,57 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
 // ---------- 7. orders, 1000 per galaxy ----------
 {
   const meta = ctx.newMeta();
-  for (let g = 0; g < 3; g++) {
+  for (let g = 0; g < 4; g++) {
     for (const ownAll of [false, true]) {
-      const run = ctx.newRun(meta, cfg, rng(9)); run.level = g * 5; if (ownAll) run.owned = ctx.allOwned(); else { run.owned.bots.chill = true; run.owned.mixes.swamp = true; }
+      const run = ctx.newRun(meta, cfg, rng(9 + g)); run.level = g * 4; ctx.catchUpGalaxies(run, cfg, rng(3));
+      if (ownAll) run.owned = ctx.allOwned();
       const spec = ctx.levelSpec(run, meta, cfg), rr = rng(100 + g), mk = ctx.makeableList(run.owned);
       let bad = [], t2seen = 0, shapes = new Set(), sizes = [1, 0];
       for (let i = 0; i < 1000; i++) {
         const o = ctx.generateOrder(spec, cfg, rr), ids = o.slots.map((s) => s.terrain);
         const sum = o.slots.reduce((a, s) => a + s.pct, 0);
-        let bonus = 0; ids.forEach((t) => { const tr = ctx.TERRAINS[t].tier; bonus += tr === 2 ? cfg.tier2Bonus : tr === 3 ? cfg.tier3Bonus : 0; if (tr > 1) t2seen++; });
+        let c2 = 0; ids.forEach((t) => { const tr = ctx.TERRAINS[t].tier; c2 += tr === 3 ? 2 : tr === 2 ? 1 : 0; if (tr > 1) t2seen++; });
+        const mult = cfg.tier2MultPct[Math.min(4, c2)];
         if (ids.length !== cfg.galaxyTerrains[g]) bad.push("count");
         if (new Set(ids).size !== ids.length) bad.push("dup");
         if (sum !== 100) bad.push("sum");
         if (o.slots.some((s) => s.pct < cfg.minTargetPct || s.pct > cfg.maxTargetPct)) bad.push("range");
         if (ids.some((t) => t < 1 || (t > 6 && !mk.includes(t)))) bad.push("unmakeable");
-        if (o.bonus !== bonus) bad.push("bonus");
+        if (o.mult !== mult || o.basePay + o.bonus !== Math.ceil(o.basePay * mult / 100 - 1e-9)) bad.push("mult");
         const pr = cfg.payRanges[ids.length - 3]; if (o.basePay < pr[0] || o.basePay > pr[1]) bad.push("pay");
         shapes.add(o.shape); sizes = [Math.min(sizes[0], o.size), Math.max(sizes[1], o.size)];
       }
-      ok(`7 galaxy ${g + 1} ${ownAll ? "all owned" : "chill+swamp"}: 1000 orders valid`, bad.length === 0, [...new Set(bad)]);
-      ok(`7 galaxy ${g + 1}: tier-2 slots appear`, t2seen > 100, t2seen);
-      const sr = cfg["sizeRangeG" + (g + 1)];
-      ok(`7 galaxy ${g + 1}: shapes and sizes`, (g === 0 ? shapes.size === 1 && shapes.has("circle") : g === 1 ? shapes.size === 10 : shapes.size === 19) && sizes[0] >= sr[0] / 100 && sizes[1] <= sr[1] / 100, [shapes.size, sizes]);
+      ok(`7 galaxy ${g + 1} ${ownAll ? "all owned" : "as dealt"}: 1000 orders valid`, bad.length === 0, [...new Set(bad)]);
+      if (g === 0 && !ownAll) ok("7 galaxy 1 is base terrains, circles, full size", t2seen === 0 && shapes.size === 1 && shapes.has("circle") && sizes[0] === 1, [t2seen, [...shapes], sizes]);
+      if (ownAll) ok(`7 galaxy ${g + 1}: tier-2 slots appear`, t2seen > 100, t2seen);
+      const want = new Set(ctx.storyShapes(ctx.runComps(run, g)));
+      ok(`7 galaxy ${g + 1}: shapes come only from drawn sets`, [...shapes].every((x) => want.has(x)), [...shapes]);
     }
   }
-  const run = ctx.newRun(meta, cfg, rng(9)), spec = ctx.levelSpec(run, meta, cfg); let any = false; const rr = rng(4);
-  for (let i = 0; i < 300; i++) if (ctx.generateOrder(spec, cfg, rr).slots.some((s) => s.terrain > 6)) any = true;
-  ok("7 nothing owned -> base terrains only", !any);
-  // tier-2 bonus reaches the credits
+  // multiplier table
+  const T = (n) => ({ terrain: n });
+  ok("7 tier-2 count: tier-3 counts 2", ctx.tier2Count([T(1), T(NAME("JUNGLE")), T(NAME("MAGMA"))]) === 3);
+  ok("7 multiplier x1.25 / x1.5 / x1.75 / x2, capped", [0, 1, 2, 3, 4, 6].map((k) => ctx.tier2Mult(k, false, cfg)).join() === "100,125,150,175,200,200");
+  ok("7 multiplier boost adds a step only on tier-2 orders", ctx.tier2Mult(1, true, cfg) === 150 && ctx.tier2Mult(0, true, cfg) === 100 && ctx.tier2Mult(4, true, cfg) === 200);
+  // multiplier reaches the credits, scales with grade
   const r = ctx.createPaintRound(cfg, { ...baseSpec, tier2: true, owned: ctx.allOwned() }, rng(11));
   let guard = 0; while (!r.queue[0].bonus && guard++ < 50) ctx.roundSkip(r);
   const o = r.queue[0], f = fillExact(r, o), sum = ctx.summarizeRound(r);
   const full = Math.ceil((o.basePay + o.bonus) * 1.25 - 1e-9), plain = Math.ceil(o.basePay * 1.25 - 1e-9);
-  ok("7 tier-2 bonus is part of the pay (grade S: 125% of base + bonus)", o.bonus > 0 && f.grade === "S" && f.paid === full && f.t2 === full - plain && sum.t2 === f.t2 && sum.total === f.paid + sum.bonus, [o.bonus, f.paid, f.t2, sum]);
+  ok("7 tier-2 multiplier is part of the pay (grade S: 125%)", o.bonus > 0 && o.mult > 100 && f.grade === "S" && f.paid === full && f.t2 === full - plain && sum.t2 === f.t2 && sum.total === f.paid + sum.bonus, [o.bonus, f.paid, f.t2]);
+  ok("7 points ignore the multiplier", f.points === 10);
   const other = [1, 2, 3, 4, 5, 6].find((t) => !r.queue[0].slots.some((s) => s.terrain === t)), junk = paintAll(r, other);
-  ok("7 a grade-F planet earns no tier-2 bonus", junk.grade === "F" && junk.paid === 0 && junk.t2 === 0);
+  ok("7 a grade-F planet earns nothing", junk.grade === "F" && junk.paid === 0 && junk.t2 === 0);
+  // featured terrains are likelier
+  const own = ctx.allOwned(), J = NAME("JUNGLE"); let a = 0, b = 0; const r1 = rng(50), r2 = rng(50);
+  for (let i = 0; i < 3000; i++) {
+    if (ctx.generateOrder({ ...baseSpec, n: 3, tier2: true, owned: own, featured: [J] }, cfg, r1).slots.some((s) => s.terrain === J)) a++;
+    if (ctx.generateOrder({ ...baseSpec, n: 3, tier2: true, owned: own }, cfg, r2).slots.some((s) => s.terrain === J)) b++;
+  }
+  ok("7 featured (new) terrains are ordered more often", a > b * 2, [a, b]);
+  // six-terrain boss
+  const six = ctx.generateOrder({ ...baseSpec, six: true, tier2: true, owned: own }, cfg, rng(5));
+  ok("7 six-terrain boss: all six base terrains", six.slots.length === 6 && six.slots.map((s) => s.terrain).sort().join() === "1,2,3,4,5,6" && six.slots.reduce((x, s) => x + s.pct, 0) === 100);
 }
 // ---------- 8. arcade RANDOM count ----------
 {
@@ -206,34 +232,42 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
       const offers = ctx.storeOffers(run, meta, cfg, rr);
       if (offers.length > 3 || new Set(offers).size !== offers.length) bad.push("slots");
       offers.forEach((id) => {
-        const p = id.split(":");
-        if (p[0] === "bot" && run.owned.bots[p[1]]) bad.push("owned bot");
-        if (p[0] === "mix" && run.owned.mixes[p[1]]) bad.push("owned mix");
-        if (id === "mix:mesa" && !run.owned.bots.high) bad.push("mesa prereq");
-        if (id === "mix:shrubland" && !run.owned.mixes.savanna) bad.push("shrubland prereq");
+        if (id.indexOf(":") >= 0) bad.push("bots/recipes sold");
         if (id === "brush" && run.items.brush >= 3) bad.push("brush stack");
         if (id === "time" && run.items.time >= 3) bad.push("time stack");
-        if (["peek", "auto", "steady"].includes(id) && run.items[id]) bad.push("owned once");
+        if (["peek", "auto", "steady", "well2", "calm", "skips", "boost", "shield"].includes(id) && run.items[id]) bad.push("owned once");
       });
-      const w = run.wallet; if (offers.length && ctx.buyItem(run, offers[0], cfg) && run.wallet >= w) bad.push("no charge");
+      const w = run.wallet; if (offers.length && ctx.buyItem(run, offers[0], cfg, meta) && run.wallet >= w) bad.push("no charge");
       run.wallet += 40;
     }
   }
   ok("10a 300 runs x 8 visits: offers always eligible", bad.length === 0, [...new Set(bad)]);
+  ok("10a2 store has the 10 items", ctx.storeItems(cfg).length === 10);
   const run = ctx.newRun(meta, cfg, rng(1)); run.wallet = 1000;
   let n = 0; while (ctx.buyItem(run, "brush", cfg)) n++;
   let t = 0; while (ctx.buyItem(run, "time", cfg)) t++;
   ok("10b stack limits 3 / 3", n === 3 && t === 3 && run.items.brush === 3 && run.items.time === 3);
-  ok("10c one-time items", ctx.buyItem(run, "bot:hot", cfg) && !ctx.buyItem(run, "bot:hot", cfg) && ctx.buyItem(run, "peek", cfg) && !ctx.buyItem(run, "peek", cfg));
-  ok("10d mesa needs HighBot", !ctx.buyItem(run, "mix:mesa", cfg) && ctx.buyItem(run, "bot:high", cfg) && ctx.buyItem(run, "mix:mesa", cfg));
+  ok("10c one-time items", ctx.buyItem(run, "peek", cfg) && !ctx.buyItem(run, "peek", cfg) && ctx.buyItem(run, "well2", cfg) && !ctx.buyItem(run, "well2", cfg));
+  ok("10d used shield cannot be rebought", (run.items.shield = 2, !ctx.buyItem(run, "shield", cfg)));
   const poor = ctx.newRun(meta, cfg, rng(1)); poor.wallet = 24;
-  ok("10e cannot overspend", !ctx.buyItem(poor, "bot:hot", cfg) && poor.wallet === 24 && ctx.buyItem(poor, "steady", cfg) && poor.wallet === 9);
+  ok("10e cannot overspend", !ctx.buyItem(poor, "well2", cfg) && poor.wallet === 24 && ctx.buyItem(poor, "steady", cfg) && poor.wallet === 9);
+  run.items.skips = true; run.items.boost = true;
   const spec = ctx.levelSpec(run, meta, cfg);
-  ok("10f items reach the level", Math.abs(spec.brushMul - Math.pow(1.15, 3)) < 1e-9 && spec.seconds === 120 && spec.peek === true);
+  ok("10f items reach the level", Math.abs(spec.brushMul - Math.pow(1.15, 3)) < 1e-9 && spec.seconds === 120 && spec.peek === true && spec.wells === 2 && spec.freeSkips === 2 && spec.multBoost);
   const m4 = ctx.newMeta(); m4.hq.slots4 = true; const r4 = ctx.newRun(m4, cfg, rng(2));
   ok("10g HQ 4 slots", ctx.storeOffers(r4, m4, cfg, rng(3)).length === 4);
-  const hq = ctx.newMeta(); hq.stock = 9;
-  ok("10h HQ purchases", ctx.buyHQ(hq, "startBot:low", cfg) && hq.stock === 1 && !ctx.buyHQ(hq, "startBot:low", cfg) && !ctx.buyHQ(hq, "suns", cfg) && ctx.newRun(hq, cfg, rng(1)).owned.bots.low === true);
+  const hq = ctx.newMeta(); hq.stock = 11;
+  ok("10h HQ: 2 wells", ctx.buyHQ(hq, "well2", cfg) && hq.stock === 1 && !ctx.buyHQ(hq, "well2", cfg) && ctx.levelSpec(ctx.newRun(hq, cfg, rng(1)), hq, cfg).wells === 2 && ctx.arcadeSpec(cfg, true, hq).wells === 2);
+  ok("10i HQ well removes the store well", !ctx.itemEligible(ctx.newRun(hq, cfg, rng(1)), "well2", cfg, hq) && !ctx.hqItems(cfg).some((x) => x.id.indexOf("startBot") === 0));
+  // calm token
+  const rc = ctx.newRun(meta, cfg, rng(4)); rc.level = 15; rc.items.calm = true;
+  ok("10j calm token: G4 boss 2 -> 1 modifier", ctx.levelMods(rc, 15).length === 1);
+  ctx.finishLevel(rc, { points: 0, total: 0 }, cfg);
+  ok("10k calm token is used up on the boss", rc.items.calm === false);
+  // free skips
+  const rs = ctx.createPaintRound(cfg, { ...baseSpec, freeSkips: 2 }, rng(4)); const t0 = rs.timeLeft;
+  ctx.roundSkip(rs); ctx.roundSkip(rs); ctx.roundSkip(rs);
+  ok("10l free skips: first 2 give +3 s", rs.timeLeft === t0 + 6 && rs.freeSkips === 0);
 }
 // ---------- 11. boss modifiers ----------
 {
@@ -262,9 +296,11 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
   const fv = paintAll(rv, other); const fs2 = fillExact(rv, rv.queue[0]);
   ok("11g VIP: below B earns nothing, S still pays", fv.paid === 0 && fv.points === 0 && fs2.points === 10 && fs2.paid > 0);
   const meta = ctx.newMeta(), run = ctx.newRun(meta, cfg, rng(3));
-  ok("11h bosses: 1, 1, 2 distinct modifiers", run.bossMods[0].length === 1 && run.bossMods[1].length === 1 && run.bossMods[2].length === 2 && run.bossMods[2][0] !== run.bossMods[2][1]);
-  run.level = 4; run.bossMods[0] = ["rush"];
-  ok("11i rush = 60 s, only on the boss", ctx.levelSpec(run, meta, cfg).seconds === 60 && (run.level = 3, ctx.levelSpec(run, meta, cfg).seconds === 90 && ctx.levelSpec(run, meta, cfg).mods.length === 0));
+  ok("11h bosses: 1, 1, 1, 2 distinct modifiers", run.bossMods.length === 4 && run.bossMods.slice(0, 3).every((m) => m.length === 1) && run.bossMods[3].length === 2 && run.bossMods[3][0] !== run.bossMods[3][1]);
+  run.level = 3; run.bossMods[0] = ["rush"];
+  ok("11i rush = 60 s, only on the boss", ctx.levelSpec(run, meta, cfg).seconds === 60 && (run.level = 2, ctx.levelSpec(run, meta, cfg).seconds === 90 && ctx.levelSpec(run, meta, cfg).mods.length === 0));
+  run.level = 3; run.bossMods[0] = ["six"];
+  ok("11k six-terrain boss sets the spec", ctx.levelSpec(run, meta, cfg).six === true);
   const off = { ...cfg }; ctx.MODS.forEach((m) => (off[ctx.modKey(m)] = false)); off.modFog = true;
   ok("11j disabled modifiers are never picked", ctx.pickBossMods(off, rng(1)).every((a) => a.every((m) => m === "fog")));
 }
@@ -272,13 +308,61 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
 {
   let okAll = true;
   for (const s of ctx.SHAPE_NAMES) { const g = ctx.makeGrid(50, s); if (g.total < 300) okAll = false; }
-  ok("12a 19 shapes, all substantial", ctx.SHAPE_NAMES.length === 19 && okAll);
+  ok("12a 20 shapes (incl. donut), all substantial", ctx.SHAPE_NAMES.length === 20 && okAll);
+  ok("12a2 shape sets only use real shapes", Object.values(ctx.SHAPE_SETS).flat().every((x) => ctx.SHAPES[x]));
   const o = { size: 0.65, shape: "circle" }; ok("12b grid scales with planet size (cell size constant)", ctx.gridFor(o, cfg).G === Math.round(75 * 0.65));
   const big = ctx.createPaintRound(cfg, baseSpec, rng(1)), small = ctx.createPaintRound(cfg, { ...baseSpec, sizeMin: 65, sizeMax: 65 }, rng(1));
   ok("12c brush radius does not shrink with the planet", ctx.brushRad(big) === ctx.brushRad(small) && small.grid.total < big.grid.total * 0.5);
   const r = ctx.createPaintRound(cfg, baseSpec, rng(1)); const ch = ctx.paintSpray(r, 37.5, 37.5, 0.2, 1);
   ok("12d touching any part of a square fills the whole square", ch.length >= 1 && r.blank === r.grid.total - ch.length);
   ok("12e system names", typeof ctx.systemName(rng(1)) === "string" && ctx.systemName(rng(1)).length > 4);
+}
+// ---------- 13. wells, galaxies ----------
+{
+  const F = NAME("FOREST"), D = NAME("DESERT"), S = NAME("SEA"), B = NAME("BEACH"), J = NAME("JUNGLE"), MT = NAME("MOUNTAINS"), MG = NAME("MAGMA"), H = NAME("HILLS");
+  const own = ctx.emptyOwned(); own.mixes.beach = true; own.bots.hot = true;
+  ok("13a well: empty + Forest = Forest", ctx.wellDrop(0, F, own) === F);
+  ok("13b well: Sea + Desert (recipe) = Beach, either order", ctx.wellDrop(S, D, own) === B && ctx.wellDrop(D, S, own) === B);
+  ok("13c well: no recipe -> overwritten", ctx.wellDrop(F, D, own) === D && ctx.wellDrop(S, D, ctx.emptyOwned()) === D);
+  ok("13d well: ERASE empties it", ctx.wellDrop(B, 0, own) === 0);
+  ok("13e bot in well: Forest + Hot = Jungle; no recipe -> 0; empty -> 0", ctx.wellBot(F, "hot", own) === J && ctx.wellBot(D, "hot", own) === 0 && ctx.wellBot(0, "hot", own) === 0 && ctx.wellBot(F, "chill", own) === 0);
+  const o2 = ctx.emptyOwned(); o2.bots.high = true; o2.bots.hot = true;
+  ok("13f tier-3 chain in a well: Hills + High = Mountains, + Hot = Magma", ctx.wellBot(ctx.wellBot(H, "high", o2), "hot", o2) === MG);
+  const r = ctx.createPaintRound(cfg, { ...baseSpec }, rng(3)); const m = Math.floor(r.grid.G / 2);
+  ok("13g a well's tier-2 terrain paints directly", ctx.paintSpray(r, m, m, 3, J).length > 0 && r.grid.cells[m * r.grid.G + m] === J);
+  // galaxies
+  const meta = ctx.newMeta(); let bad = [];
+  for (let seed = 0; seed < 400; seed++) {
+    const run = ctx.newRun(meta, cfg, rng(seed)), rr = rng(seed + 9999);
+    if (run.comps.length !== 3 || new Set(run.comps).size !== 3 || run.comps.some((c) => !ctx.COMPLICATIONS.includes(c))) bad.push("comps");
+    const g0 = ctx.enterGalaxy(run, 0, cfg, rr);
+    if (g0.name !== ctx.HOME_GALAXY || g0.comp || g0.mix || ctx.makeableList(run.owned).length) bad.push("g1 not fixed");
+    for (let g = 1; g < 4; g++) {
+      const n0 = Object.keys(run.owned.mixes).length, info = ctx.enterGalaxy(run, g, cfg, rr), c = run.comps[g - 1];
+      if (info.comp !== c || !info.name) bad.push("info");
+      if (c.startsWith("bot:") && !run.owned.bots[c.slice(4)]) bad.push("bot not granted");
+      if (Object.keys(run.owned.mixes).length !== n0 + 1 || !info.mix) bad.push("one mix per galaxy");
+      const mx = ctx.MIXES.find((x) => x.id === info.mix); if (!ctx.makeable(mx.a, run.owned) || !ctx.makeable(mx.b, run.owned)) bad.push("mix not makeable");
+      if (ctx.enterGalaxy(run, g, cfg, rr) !== info || Object.keys(run.owned.mixes).length !== n0 + 1) bad.push("not idempotent");
+      if (!info.newTerrains.every((t) => ctx.makeable(t, run.owned))) bad.push("new terrains");
+    }
+    const bots = Object.keys(run.owned.bots).length, wantBots = run.comps.filter((c) => c.startsWith("bot:")).length;
+    if (bots !== wantBots) bad.push("bots only from draws");
+  }
+  ok("13h 400 runs: G1 fixed, each later galaxy adds its complication + 1 makeable mix", bad.length === 0, [...new Set(bad)]);
+  const run = ctx.newRun(meta, cfg, rng(7)); run.comps = ["size", "shapes:suits", "bot:low"]; run.level = 12; ctx.catchUpGalaxies(run, cfg, rng(1));
+  const sp = ctx.levelSpec(run, meta, cfg);
+  ok("13i complications stack (G4 has size + suits + low bot)", sp.sizeMin === 65 && sp.shapes.includes("heart") && sp.shapes.includes("circle") && run.owned.bots.low && sp.n === 5 && run.galaxies.length === 4);
+  run.level = 4; const sp2 = ctx.levelSpec(run, meta, cfg);
+  ok("13j G2 only has the first complication; terrain count 4", sp2.sizeMin === 65 && !sp2.shapes.includes("heart") && sp2.n === 4);
+  ok("13k terrain counts 3/4/5/5", cfg.galaxyTerrains.join() === "3,4,5,5");
+  // auto-finish never gives leftovers to unordered terrains
+  const g = ctx.makeGrid(20, "square"), ord = { basePay: 5, slots: [{ terrain: 1, pct: 50 }, { terrain: 2, pct: 50 }] };
+  for (let i = 0; i < 200; i++) g.cells[i] = 1; for (let i = 200; i < 380; i++) g.cells[i] = 2; for (let i = 380; i < 390; i++) g.cells[i] = 6; // 10 blanks, 10 unordered
+  const cells = ctx.autoFill(g, ord), c = ctx.countGrid({ cells, inside: g.inside });
+  ok("13l auto-finish: leftovers never go to unordered terrain, best score", c[6] === 10 && c[0] === 0 && ctx.scorePlanet(ord, c, g.total, cfg).S === 2, [c[1], c[2], c[6]]);
+  const pr = ctx.createPaintRound(cfg, ctx.practiceSpec(), rng(2)); const tl = pr.timeLeft; ctx.roundTick(pr, 30);
+  ok("13m practice is untimed", pr.timeLeft === tl && !pr.over);
 }
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
