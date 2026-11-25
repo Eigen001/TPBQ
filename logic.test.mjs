@@ -475,5 +475,31 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
   const ow = ctx.emptyOwned(); ow.bots.hot = true;
   ok("17i sous pick: nothing makeable -> 0; hot bot only -> a tier-2 terrain", ctx.sousPick(ctx.emptyOwned(), rng(1)) === 0 && ctx.TERRAINS[ctx.sousPick(ow, rng(1))].tier === 2 && ctx.makeable(ctx.sousPick(ow, rng(2)), ow));
 }
+{
+  const cfg2 = JSON.parse(JSON.stringify(ctx.CONFIG_DEFAULTS)), meta = ctx.newMeta();
+  const run = ctx.newRun(meta, cfg2, rng(21)); ctx.enterGalaxy(run, 0, cfg2, rng(22)); run.level = 4; run.wallet = 33; run.levelSeed = 123456; run.items.peek = true; run.galaxies[0].name = "Caf\u00e9 Nebula \u2605";
+  cfg2.roundSeconds = 45; cfg2.priceUndo = 9; cfg2.musicVolume = 3; cfg2.artStyle = "classic"; cfg2.arcadeCount = 5; meta.hq.reroll = true;
+  const code = ctx.seedPack(run, { offers: ["peek", "undo"], rerolled: true, rerollN: 2 }, cfg2, meta.hq, "store", "1.8");
+  ok("18a code is plain url-safe text with prefix and checksum", /^TPBQ1\.[A-Za-z0-9_-]+\.[0-9a-f]{8}$/.test(code), code.length);
+  let u = ctx.seedUnpack(code);
+  ok("18b round trip keeps run, shelf, where, seed, non-ASCII names", u.ok && u.data.run.level === 4 && u.data.run.wallet === 33 && u.data.run.levelSeed === 123456 && u.data.run.galaxies[0].name === run.galaxies[0].name && u.data.w === "store" && u.data.st.offers.join() === "peek,undo" && u.data.st.rerollN === 2, u.ok && u.data.run.galaxies[0].name);
+  ok("18c only gameplay tweaks are carried (not music/art/arcade)", JSON.stringify(Object.keys(u.data.cfg).sort()) === JSON.stringify(["priceUndo", "roundSeconds"]), Object.keys(u.data.cfg));
+  const wrapped = "my notes\n" + code.replace(/(.{37})/g, "$1\n ") + "\n\u200b end of note";
+  ok("18d tolerates Notes line wraps, spaces and surrounding text", ctx.seedUnpack(wrapped).ok);
+  ok("18e rejects junk, cut-off and edited codes", !ctx.seedUnpack("hello").ok && !ctx.seedUnpack(code.slice(0, 120)).ok && !ctx.seedUnpack(code.slice(0, 40) + (code[40] === "A" ? "B" : "A") + code.slice(41)).ok && !ctx.seedUnpack("").ok);
+  const tgt = JSON.parse(JSON.stringify(ctx.CONFIG_DEFAULTS)); tgt.musicVolume = 77; tgt.roundSeconds = 120; tgt.priceTip = 99;
+  ctx.seedApplyCfg(tgt, u.data.cfg);
+  ok("18f applying a code sets its tweaks, resets other gameplay keys, keeps the loader's music", tgt.roundSeconds === 45 && tgt.priceUndo === 9 && tgt.priceTip === ctx.CONFIG_DEFAULTS.priceTip && tgt.musicVolume === 77);
+  ok("18g HQ unlocks come through and unknown keys are dropped", ctx.seedHq({ reroll: true, bogus: "x" }).reroll === true && !("bogus" in ctx.seedHq({ bogus: "x" })) && Object.keys(ctx.seedHq({})).length === 0);
+  ctx.SAVE_LOCK = true; ctx.saveJSON(ctx.CFG_KEY, { x: 1 });
+  ok("18h save lock never reaches storage for settings/meta", true);
+  ctx.SAVE_LOCK = false;
+  // same seed -> identical galaxy entry and level planets
+  const mk = () => { const r = ctx.newRun(meta, cfg2, rng(5)); r.level = 3; return r; };
+  const g1 = ctx.enterGalaxy(mk(), 1, cfg2, rng(777)), g2 = ctx.enterGalaxy(mk(), 1, cfg2, rng(777));
+  ok("18i same seed gives the same galaxy intro", JSON.stringify(g1) === JSON.stringify(g2));
+  const r1 = mk(), sp = ctx.levelSpec(r1, meta, cfg2), a = ctx.createPaintRound(cfg2, sp, rng(4242)), b = ctx.createPaintRound(cfg2, sp, rng(4242));
+  ok("18j same seed gives the same planets and orders", JSON.stringify(a.queue.slice(0, 5)) === JSON.stringify(b.queue.slice(0, 5)));
+}
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

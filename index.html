@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TPBQ">
-<meta name="tpbq-build" content="1.7">
+<meta name="tpbq-build" content="1.8">
 <meta http-equiv="Cache-Control" content="no-cache">
 <title>TPBQ - Tiny Planets Built Quick</title>
 <style>
@@ -261,6 +261,8 @@ body.poster .big2{text-shadow:4px 4px 0 #d9471f}
 /* ---------- v1.1: wells, bots, slot reel, slides, bazaar ---------- */
 #stockLine{line-height:1.45}#stockLine b{color:var(--am)}#stockLine small{font-size:9px;opacity:.6;letter-spacing:0;font-weight:700}
 #tutBtn{font-size:13px}
+#seedBtn{font-size:13px}
+.seedbox{width:100%;box-sizing:border-box;height:36vh;background:#10262b;color:#f4e6c8;border:2px solid #f4e6c8;border-radius:10px;font:11px/1.3 ui-monospace,Menlo,monospace;padding:8px;word-break:break-all;resize:none}
 .tile.well{margin-left:4px}
 .tile.well.pulse,.bot.pulse{animation:pop .35s ease-out}
 @keyframes pop{40%{transform:scale(1.18)}100%{transform:scale(1)}}
@@ -381,6 +383,7 @@ body:not(.poster) #hand.palC .tile{background:#141a3c;border:1.5px solid #3c4680
   <div id="stockLine"></div>
   <button id="storyBtn" class="pri">STORY</button>
   <div id="startRow0"><button id="arcadeBtn">ARCADE</button><button id="hqBtn">HQ</button></div>
+  <button id="seedBtn" class="small">CONTINUE RUN FROM SEED</button>
   <button id="tutBtn" class="small">? HOW TO PLAY</button>
   <div id="startRow">
     <button id="gearBtn" class="small">&#9881; SETTINGS</button>
@@ -451,9 +454,9 @@ body:not(.poster) #hand.palC .tile{background:#141a3c;border:1.5px solid #3c4680
 
 <canvas id="ghost"></canvas>
 
-<script src="js/logic.js?v=1.7"></script>
-<script src="js/audio.js?v=1.7"></script>
-<script src="js/art.js?v=1.7"></script>
-<script src="js/ui.js?v=1.7"></script>
+<script src="js/logic.js?v=1.8"></script>
+<script src="js/audio.js?v=1.8"></script>
+<script src="js/art.js?v=1.8"></script>
+<script src="js/ui.js?v=1.8"></script>
 </body>
 </html>
