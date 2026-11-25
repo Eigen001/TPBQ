@@ -152,7 +152,7 @@ function drawCardPoster(c, id, w, h, poolAlpha, shadow) {
   if (id === 0) { c.fillStyle = "#17383f"; c.fillRect(x, y, w, h); }
   else texDraw(c, id, 0, 0, w * 1.25 * d, h * 1.25 * d, x, y, w, h);
   c.restore();
-  if (id === 0) { var q = Math.min(w, h) * 0.2; c.strokeStyle = "#f4e6c8"; c.lineWidth = Math.max(2.5, w * 0.08); c.lineCap = "round"; c.beginPath(); c.moveTo(-q, -q); c.lineTo(q, q); c.moveTo(q, -q); c.lineTo(-q, q); c.stroke(); }
+  if (id === 0) { var q = w * 0.2; c.strokeStyle = "#f4e6c8"; c.lineWidth = Math.max(2.5, w * 0.08); c.lineCap = "round"; c.beginPath(); c.moveTo(-q, -q); c.lineTo(q, q); c.moveTo(q, -q); c.lineTo(-q, q); c.stroke(); }
 }
 function alienSVGPoster(o) {
   var k = o.look, head = PCOL[o.tint], shirt = ["#e2622b", "#f2b33d", "#3aa7a3"][k.antenna], ink = PINK, cream = "#f4e6c8";
@@ -224,7 +224,7 @@ function drawCard(c, id, w, h, poolAlpha, shadow) {
     c.fillStyle = g; c.fillRect(-s, -s, 2 * s, 2 * s); c.lineWidth = 1; c.strokeStyle = INK; c.strokeRect(-s, -s, 2 * s, 2 * s);
     c.fillStyle = "rgba(255,255,255,.9)"; c.fillRect(-s * 0.4, -s * 0.4, s * 0.8, s * 0.8); c.restore();
   }
-  if (id === 0) { var e = Math.min(iw, ih) * 0.32; c.strokeStyle = "#ff5a7a"; c.lineWidth = Math.max(2, Math.min(w, h) * 0.05); c.lineCap = "round"; c.beginPath(); c.moveTo(-e, -e); c.lineTo(e, e); c.moveTo(e, -e); c.lineTo(-e, e); c.stroke(); }
+  if (id === 0) { c.strokeStyle = "#ff5a7a"; c.lineWidth = Math.max(2, w * 0.05); c.lineCap = "round"; c.beginPath(); c.moveTo(-iw * 0.28, -iw * 0.28); c.lineTo(iw * 0.28, iw * 0.28); c.moveTo(iw * 0.28, -iw * 0.28); c.lineTo(-iw * 0.28, iw * 0.28); c.stroke(); }
 }
 function chip(id) {
   if (id === ANY) return '<span class="chip any"></span>';
@@ -259,9 +259,8 @@ function alienSVG(o, p) {
 
 /* ----- tier 2/3 terrains: poster colour + inked symbol that reads as a variant of the parent ----- */
 PCOL = PCOL.concat(["#8a5442", "#1c6a3a", "#b4ccc0", "#8ec4ea", "#84ba54", "#c8702c", "#16347a", "#e6eef4", "#6a5048", "#6e1810",
-  "#688848", "#f2c86a", "#d4cc74", "#c6ac54", "#f4dca0", "#3c92c4", "#c05c3a", "#a09654",
-  "#a8dcd0", "#b8a888", "#7a8696"]);
-var PSTEP = { 8: 20, 13: 30, 14: 30, 10: 30 }, PINKC = { 13: "#f4e6c8", 15: "#f4e6c8", 16: "#f2913d", 27: "#14262b" };
+  "#688848", "#f2c86a", "#d4cc74", "#c6ac54", "#f4dca0", "#3c92c4", "#c05c3a", "#a09654"]);
+var PSTEP = { 8: 20, 13: 30, 14: 30, 10: 30 }, PINKC = { 13: "#f4e6c8", 15: "#f4e6c8", 16: "#f2913d" };
 (function () { for (var id = 7; id < TERRAINS.length; id++) { var c = TERRAINS[id].color; TCOL[id] = rgb(mix(c, [255, 255, 255], 0.35)); PAINT[id] = posterPaint(id); } })();
 function inkSym2(x, id, r) {
   var k, ink = x.strokeStyle;
@@ -284,9 +283,6 @@ function inkSym2(x, id, r) {
   else if (id === 21) { sub(3, 0, -12, 0.9); x.fillStyle = ink; for (k = 0; k < 4; k++) { x.beginPath(); x.arc(-20 + k * 13 + r() * 4, 10 + r() * 12, 2.2, 0, 7); x.fill(); } }
   else if (id === 22) { sub(3, 0, -10, 0.9); sub(4, 0, 14, 0.9); }
   else if (id === 23) { x.moveTo(-28, 16); x.lineTo(-18, -14); x.lineTo(18, -14); x.lineTo(28, 16); x.stroke(); x.beginPath(); x.lineWidth *= 0.6; for (k = 0; k < 5; k++) { x.moveTo(-14 + k * 7, -14); x.lineTo(-16 + k * 7, 2); } x.stroke(); }
-  else if (id === 25) { x.ellipse(0, 12, 22, 9, 0, 0, 7); x.fillStyle = "#46beba"; x.fill(); x.strokeStyle = "#e8873a"; x.lineWidth *= 1.3; x.stroke(); x.strokeStyle = ink; x.lineWidth /= 1.3; x.beginPath(); for (k = 0; k < 3; k++) { var sx = -10 + k * 10; x.moveTo(sx, 0); x.quadraticCurveTo(sx - 5, -8, sx, -14); x.quadraticCurveTo(sx + 5, -20, sx, -26); } x.stroke(); }
-  else if (id === 26) { x.moveTo(-30, 18); x.lineTo(-22, -8); x.lineTo(22, -8); x.lineTo(30, 18); x.stroke(); x.beginPath(); x.lineWidth *= 0.7; for (k = 0; k < 3; k++) { var gx = -14 + k * 14; x.moveTo(gx - 4, -8); x.lineTo(gx - 2, -14); x.moveTo(gx, -8); x.lineTo(gx, -16); x.moveTo(gx + 4, -8); x.lineTo(gx + 2, -14); } x.stroke(); }
-  else if (id === 27) { x.moveTo(-30, 20); x.lineTo(-6, -26); x.lineTo(6, -6); x.lineTo(14, -16); x.lineTo(30, 20); x.stroke(); x.beginPath(); x.moveTo(-6, -26); x.lineTo(-17, -5); x.lineTo(-11, -9); x.lineTo(-6, -3); x.lineTo(-1, -10); x.lineTo(3, -6); x.lineTo(6, -6); x.closePath(); x.moveTo(14, -16); x.lineTo(9, -7); x.lineTo(14, -9); x.lineTo(19, -6); x.closePath(); x.fillStyle = "#fff"; x.fill(); x.stroke(); }
   else if (id === 24) { [[-16, 6, 8], [2, -4, 9], [18, 8, 7]].forEach(function (p) { x.moveTo(p[0] + p[2], p[1]); x.arc(p[0], p[1], p[2], 0, Math.PI, true); x.moveTo(p[0], p[1]); x.lineTo(p[0], p[1] + 8); }); x.stroke(); }
 }
 /* ----- textures are built lazily; tier 2/3 at half resolution to stay light on iPhone memory ----- */
@@ -391,22 +387,15 @@ var STORE_ICONS = {
   skips: '<path d="M3 5l8 7-8 7zM12 5l8 7-8 7z" fill="#f2b33d"/><path d="M21 5v14" stroke="#f4e6c8" stroke-width="2.4"/>',
   boost: '<text x="12" y="17" text-anchor="middle" font-size="14" font-weight="900" font-family="Arial Black,Arial" fill="#f2b33d">x2</text><path d="M4 20h16" stroke="#e2622b" stroke-width="2"/>',
   shield: '<path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z" fill="#3aa7a3" stroke="#f4e6c8" stroke-width="1.8"/><path d="M8 12l3 3 5-6" stroke="#f4e6c8" stroke-width="2.2" fill="none" stroke-linecap="round"/>',
-  dialSize: '<path d="M12 2l5 6H7z" fill="#f2b33d"/><path d="M12 22l-5-6h10z" fill="#f2b33d"/><circle cx="12" cy="12" r="2.6" fill="#f4e6c8"/>',
-  dialShape: '<circle cx="6" cy="7" r="4" fill="#f4e6c8"/><rect x="13" y="3" width="8" height="8" fill="#f2b33d"/><path d="M12 13l5 9H7z" fill="#e2622b"/>',
-  undo: '<path d="M8 5L3 10l5 5" stroke="#f2b33d" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 10h9a6 6 0 0 1 0 12H9" stroke="#f4e6c8" stroke-width="2.6" fill="none" stroke-linecap="round"/>',
-  freeze: '<path d="M12 2v20M3.3 7l17.4 10M20.7 7L3.3 17" stroke="#8ec4ea" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="12" r="4.5" fill="#17383f" stroke="#f4e6c8" stroke-width="1.6"/><path d="M12 10v2.4l1.6 1" stroke="#f4e6c8" stroke-width="1.4" fill="none"/>',
-  bucket: '<path d="M5 9l7-6 7 6-7 7z" fill="#f4e6c8" stroke="#17383f" stroke-width="1.2"/><path d="M19 9c1.5 2.5 2.5 4 2.5 5.5a2.5 2.5 0 0 1-5 0c0-1.5 1-3 2.5-5.5z" fill="#3aa7a3"/><path d="M3 21h18" stroke="#f2b33d" stroke-width="2.4" stroke-linecap="round"/>',
-  cushion: '<path d="M3 9c0-3 3-4 9-4s9 1 9 4v6c0 3-3 4-9 4s-9-1-9-4z" fill="#e2622b"/><path d="M8 12h8M12 8v8" stroke="#f4e6c8" stroke-width="2" stroke-linecap="round"/>',
-  tip: '<circle cx="9" cy="14" r="7" fill="#f2b33d" stroke="#17383f" stroke-width="1.2"/><text x="9" y="18" text-anchor="middle" font-size="9" font-weight="900" font-family="Arial Black,Arial" fill="#17383f">+2</text><path d="M18 2l-3 7h3l-2 7 6-9h-3l2-5z" fill="#f4e6c8"/>',
   shop: '<path d="M3 10h18v11H3z" fill="#f4e6c8"/><path d="M2 4h20l-1 6H3z" fill="#e2622b"/><path d="M7 4v6M12 4v6M17 4v6" stroke="#f4e6c8" stroke-width="1.4"/><path d="M10 21v-6h4v6" fill="#17383f"/>'
 };
 function storeIcon(id) { return '<svg viewBox="0 0 24 24">' + (STORE_ICONS[id] || STORE_ICONS.shop) + "</svg>"; }
 var GAL_COL = { home: ["#3aa7a3", "#f4e6c8"], "bot:hot": ["#e2622b", "#f2b33d"], "bot:chill": ["#8ec4ea", "#ffffff"], "bot:low": ["#2e6ebe", "#46beba"], "bot:high": ["#b8452c", "#f4dca0"],
-  "shapes:basic": ["#f2b33d", "#f4e6c8"], "shapes:suits": ["#d65430", "#f4e6c8"], "shapes:long": ["#a06be0", "#f4e6c8"], size: ["#84ba54", "#f4e6c8"], recipes: ["#5fc9b5", "#f2b33d"] };
+  "shapes:basic": ["#f2b33d", "#f4e6c8"], "shapes:suits": ["#d65430", "#f4e6c8"], "shapes:long": ["#a06be0", "#f4e6c8"], size: ["#84ba54", "#f4e6c8"] };
 function drawGalaxyArt(c, info) { // a spiral galaxy in the complication's colours
   var w = c.clientWidth || 300, h = c.clientHeight || 120, d = L.dpr, x = c.getContext("2d"), r = makeRng(77 + info.g * 13 + (info.comp || "").length), k, a;
   c.width = Math.round(w * d); c.height = Math.round(h * d); x.scale(d, d);
-  var col = GAL_COL[info.comp || "home"] || GAL_COL.home;
+  var col = GAL_COL[info.comp || "home"];
   x.fillStyle = "#17383f"; x.fillRect(0, 0, w, h);
   x.fillStyle = "#f4e6c8"; for (k = 0; k < 40; k++) star4(x, r() * w, r() * h, 0.6 + r() * 1.4);
   x.save(); x.translate(w / 2, h / 2); x.scale(1, 0.42); x.rotate(r() * 6);

@@ -1,12 +1,8 @@
 "use strict";
 /* ================= UI: screens, input, game loop, settings ================= */
-var BUILD = "1.5"; // must match <meta name="tpbq-build"> in index.html
-document.body.classList.toggle("poster", POSTER()); // art style first, so nothing below can leave the game in the wrong look
-function bind(id, fn) { var el = $(id); if (el) el.onclick = fn; } // a missing button (old index.html) must never stop the game loading
 var META = (function () {
   var d = newMeta(), m = loadJSON("tpbq_meta");
   if (m && typeof m === "object") Object.keys(d).forEach(function (k) { if (typeof m[k] === typeof d[k] && m[k] !== null) d[k] = m[k]; });
-  if (d.hq.well2) { delete d.hq.well2; d.stock += 10; saveJSON("tpbq_meta", d); } // v1.3 removed the 2-wells unlock: refund it
   return d;
 })();
 function saveMeta() { saveJSON("tpbq_meta", META); }
@@ -15,7 +11,7 @@ function validRun(r) {
     r.v === 2 && r.owned && r.owned.bots && r.owned.mixes && r.items && Array.isArray(r.bossMods) && r.bossMods.length === GALAXIES &&
     Array.isArray(r.comps) && Array.isArray(r.galaxies) && !r.over;
 }
-var RUN = (function () { var r = loadJSON("tpbq_run"); return validRun(r) ? normalizeRun(r, CONFIG) : null; })();
+var RUN = (function () { var r = loadJSON("tpbq_run"); return validRun(r) ? r : null; })();
 function saveRun() { if (RUN && !RUN.over) saveJSON("tpbq_run", RUN); else { try { localStorage.removeItem("tpbq_run"); } catch (e) { } } }
 function t2Unlocked() { return !!CONFIG.arcadeTier2Unlocked || !!META.arcadeTier2Unlocked; }
 function newSeed() { return (Date.now() ^ (Math.random() * 1e9)) >>> 0; }
@@ -51,7 +47,7 @@ document.addEventListener("pointerdown", function (e) {
   if (t && !t.disabled && !t.classList.contains("locked")) Haptic.tap();
 }, true);
 
-var mode = "arcade", spec = null, round = null, phase = "idle", lastT = 0, lastSecShown = -1, cdToken = 0, undoStack = [], bucketArmed = false, pausedFrom = null;
+var mode = "arcade", spec = null, round = null, phase = "idle", lastT = 0, lastSecShown = -1, cdToken = 0;
 var planetEl = $("planet"), pctx = planetEl.getContext("2d"), ghostEl = $("ghost"), gctx = ghostEl.getContext("2d"), wrapEl = $("planetWrap");
 var brush = 1, wells = [0], brushWell = null, lastWell = 0, drag = null, paint = null, builtKey = "", lastHiss = 0;
 var peekUsed = false, peekUntil = -1, hiddenShown = false, spinAng = 0, fogPts = [];
@@ -131,15 +127,14 @@ function layout() {
   ghostEl.width = Math.round(vw * dpr); ghostEl.height = Math.round(vh * dpr); ghostEl.style.width = vw + "px"; ghostEl.style.height = vh + "px";
   var D = Math.round(vw * CONFIG.canvasDiameterPct / 100), shrunk = false;
   if (inGame) { var avail = $("mid").clientHeight - 30; if (avail > 60 && D > avail) { D = avail; shrunk = true; } }
-  if (inGame && spec && (spec.dialSize || spec.dialShape)) { var side = 8 + (spec.dialSize ? 36 : 0) + (spec.dialShape ? 36 : 0); if (D > vw - 2 * side) { D = vw - 2 * side; shrunk = true; } }
-  var pal = CONFIG.paletteLayout, tw = Math.max(48, Math.min(96, Math.floor((vw - 16 - 54 - 12 - 3 * 8 - (pal === "b" ? 10 : 0)) / 4))), th = pal === "a" ? 34 : 46;
+  var slots = 7 + (inGame ? nWells() : 1), tw = Math.max(26, Math.min(56, Math.floor((vw - 16 - 46 - 5 * slots) / slots))), th = Math.round(tw * 1.5);
   var changed = !L || L.vw !== vw || L.vh !== vh || L.dpr !== dpr || L.art !== CONFIG.artStyle;
   L = { dpr: dpr, vw: vw, vh: vh, D: D, Dp: Math.round(D * dpr), cw: 0, ch: 0, cwPx: D * 0.36, chPx: D * 0.54, hw: tw, hh: th, shrunk: shrunk, art: CONFIG.artStyle };
   if (changed) drawSpace();
   buildTextures();
   if (round && inGame) {
     buildLayers();
-    var k = tw + ":" + th + ":" + dpr + ":" + texKey + ":" + nWells() + ":" + pal;
+    var k = tw + ":" + th + ":" + dpr + ":" + texKey + ":" + nWells();
     if (k !== builtKey) { buildPalette(); builtKey = k; }
     renderPlanet(); fitOrder();
     if (round.mod.fog) drawFog(performance.now());
@@ -162,26 +157,15 @@ function drawHero() { // little demo planet on the start screen, drawn the same 
 /* ----- palette: 6 base terrains + erase, then the mixing well(s). Bots sit at the planet corners and act on a well. ----- */
 function activeId() { return brushWell !== null ? wells[brushWell] : brush; } // terrain the brush paints (0 = erase / empty well)
 function nWells() { return spec && spec.wells ? spec.wells : 1; }
-// 2 rows x 4: six terrains, ERASE and the WELL. Three looks (CONFIG.paletteLayout): a = cards with labels under,
-// b = cards with labels inside and a separate tools column (WELL over ERASE), c = label chips (swatch + name).
-var PAL_ORDER = { a: { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 0: 7, w: 8 }, b: { 1: 1, 2: 2, 3: 3, w: 4, 4: 5, 5: 6, 6: 7, 0: 8 }, c: { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 0: 7, w: 8 } };
-function tileCanvas(s) { // art canvas for a palette tile; size depends on the layout
-  var pal = CONFIG.paletteLayout, d = L.dpr, c = document.createElement("canvas"), chip = pal === "c";
-  var aw = chip ? L.hh - 22 : L.hw, ah = chip ? L.hh - 22 : L.hh, m = chip ? 0 : 20;
-  c.width = Math.round((aw + m) * d); c.height = Math.round((ah + m) * d); c.style.width = (aw + m) + "px"; c.style.height = (ah + m) + "px";
-  c._aw = aw; c._ah = ah; s.appendChild(c); return c;
-}
 function buildPalette() {
-  var h = $("hand"), d = L.dpr, pal = CONFIG.paletteLayout; h.innerHTML = ""; h.className = "grid pal" + pal.toUpperCase();
-  $("bottom").className = "pal" + pal.toUpperCase();
+  var h = $("hand"), d = L.dpr; h.innerHTML = "";
   PALETTE.forEach(function (id) {
-    var s = document.createElement("div"); s.className = "tile" + (id === 0 ? " tool" : ""); s.style.width = L.hw + "px"; s.style.height = L.hh + "px"; s.setAttribute("data-id", id);
-    s.style.order = PAL_ORDER[pal][id];
-    var c = tileCanvas(s), x = c.getContext("2d"); x.setTransform(d, 0, 0, d, c.width / 2, c.height / 2);
-    if (pal === "c" && id) { x.beginPath(); x.arc(0, 0, c._aw / 2, 0, 7); x.clip(); texDraw(x, id, 0, 0, 120, 120, -c._aw / 2, -c._aw / 2, c._aw, c._aw); }
-    else drawCard(x, id, c._aw, c._ah, 1, pal !== "c");
+    var s = document.createElement("div"); s.className = "tile"; s.style.width = L.hw + "px"; s.style.height = L.hh + "px"; s.setAttribute("data-id", id);
+    var c = document.createElement("canvas"); c.width = Math.round((L.hw + 20) * d); c.height = Math.round((L.hh + 20) * d);
+    c.style.width = (L.hw + 20) + "px"; c.style.height = (L.hh + 20) + "px";
+    var x = c.getContext("2d"); x.setTransform(d, 0, 0, d, c.width / 2, c.height / 2); drawCard(x, id, L.hw, L.hh, 1, true);
     var lab = document.createElement("span"); lab.textContent = id === 0 ? "ERASE" : TERRAINS[id].name;
-    s.appendChild(lab); h.appendChild(s); fitLabel(lab);
+    s.appendChild(c); s.appendChild(lab); h.appendChild(s);
     s.addEventListener("pointerdown", function (e) {
       e.preventDefault();
       if (round && round.locked.indexOf(id) >= 0) { AudioSys.sfx("bonk"); Haptic.error(); return; }
@@ -190,11 +174,11 @@ function buildPalette() {
     });
   });
   for (var w = 0; w < nWells(); w++) (function (w) {
-    var s = document.createElement("div"); s.className = "tile well tool"; s.id = "well" + w; s.style.width = L.hw + "px"; s.style.height = L.hh + "px";
-    s.style.order = PAL_ORDER[CONFIG.paletteLayout].w + w;
-    tileCanvas(s);
+    var s = document.createElement("div"); s.className = "tile well"; s.id = "well" + w; s.style.width = L.hw + "px"; s.style.height = L.hh + "px";
+    var c = document.createElement("canvas"); c.width = Math.round((L.hw + 20) * d); c.height = Math.round((L.hh + 20) * d);
+    c.style.width = (L.hw + 20) + "px"; c.style.height = (L.hh + 20) + "px";
     var lab = document.createElement("span");
-    s.appendChild(lab); h.appendChild(s);
+    s.appendChild(c); s.appendChild(lab); h.appendChild(s);
     s.addEventListener("pointerdown", function (e) {
       e.preventDefault();
       if (!wells[w]) { AudioSys.sfx("bonk"); Haptic.error(); wellHint(); return; }
@@ -203,18 +187,13 @@ function buildPalette() {
   })(w);
   refreshWells(); refreshBrushUI(); refreshLocked();
 }
-function fitLabel(sp) { // chips: shrink a long terrain name until it fits its tile
-  if (CONFIG.paletteLayout !== "c") return;
-  var f = 11; sp.style.fontSize = f + "px";
-  while (f > 7 && (sp.scrollWidth > sp.clientWidth + 1 || sp.scrollHeight > sp.parentNode.clientHeight - 4)) { f -= 0.5; sp.style.fontSize = f + "px"; }
-}
 function refreshWells() {
   for (var w = 0; w < nWells(); w++) {
     var el = $("well" + w); if (!el) continue;
     var c = el.firstChild, d = L.dpr, x = c.getContext("2d");
     x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, c.width, c.height); x.setTransform(d, 0, 0, d, c.width / 2, c.height / 2);
-    if (CONFIG.paletteLayout === "c") drawWell(x, wells[w], c._aw * 1.15, c._ah * 1.25); else drawWell(x, wells[w], c._aw, c._ah);
-    el.lastChild.textContent = wells[w] ? TERRAINS[wells[w]].name : "WELL"; fitLabel(el.lastChild);
+    drawWell(x, wells[w], L.hw, L.hh);
+    el.lastChild.textContent = wells[w] ? TERRAINS[wells[w]].name : "WELL";
   }
 }
 function wellPulse(w) { var el = $("well" + w); if (!el) return; el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse"); }
@@ -273,43 +252,6 @@ function refreshLocked() {
 function setupTools() { // show only what this round owns
   BOTS.forEach(function (b) { var el = $("bot_" + b); el.classList.toggle("own", !!round.owned.bots[b]); el.innerHTML = botSVG(b); el.style.color = BOT_COL[b]; el.style.borderColor = BOT_COL[b]; });
   $("peekBtn").classList.toggle("own", !!spec.peek && !peekUsed);
-  $("mid").classList.toggle("hastools", !!(spec.peek || spec.undo || spec.freeze || spec.bucket));
-  $("dials").classList.toggle("own", !!spec.dialSize); $("shapes").classList.toggle("own", !!spec.dialShape);
-  $("shapes").classList.toggle("solo", !spec.dialSize);
-  refreshTools();
-}
-function refreshTools() { // UNDO / FREEZE / BUCKET buttons and the dials
-  var u = $("undoBtn"), f = $("freezeBtn"), b = $("bucketBtn");
-  function lab(el, icon, t) { var h = storeIcon(icon) + "<span>" + t + "</span>"; if (el._h !== h) { el.innerHTML = h; el._h = h; } }
-  lab($("peekBtn"), "peek", "PEEK"); lab(b, "bucket", bucketArmed && !round.bucketUsed ? "TAP PLANET" : "BUCKET");
-  u.classList.toggle("own", !!spec.undo); lab(u, "undo", "UNDO " + round.undoLeft); u.disabled = round.undoLeft <= 0 || !undoStack.length;
-  f.classList.toggle("own", !!spec.freeze && (round.freezeLeft > 0 || round.frozen > 0)); lab(f, "freeze", round.frozen > 0 ? "FROZEN " + Math.ceil(round.frozen) : "FREEZE"); f.classList.toggle("on", round.frozen > 0);
-  b.classList.toggle("own", !!spec.bucket); b.disabled = round.bucketUsed; b.classList.toggle("on", bucketArmed && !round.bucketUsed);
-  $("dialPct").textContent = Math.round(round.basePct) + "%";
-  ["circle", "square", "triangle"].forEach(function (k) { $("sh_" + k).classList.toggle("sel", round.shape === k); });
-}
-function setBrushPct(d) {
-  var v = clampDial(round.basePct + d * CONFIG.dialStepPct, CONFIG);
-  if (v === round.basePct) { AudioSys.sfx("bonk"); return; }
-  round.basePct = v; if (spec.story && RUN) { RUN.brushPct = v; saveRun(); } AudioSys.sfx("pickup"); refreshTools();
-}
-function setBrushShape(k) { round.shape = k; if (spec.story && RUN) { RUN.brushShape = k; saveRun(); } AudioSys.sfx("pickup"); refreshTools(); }
-/* ----- quit: pauses the round and asks what to do ----- */
-function openQuit() {
-  if (phase !== "play" && phase !== "countdown") return;
-  pausedFrom = phase; phase = "paused"; paint = null; cdToken++; AudioSys.music(null);
-  $("cd").style.display = "none"; $("banner").style.display = "none";
-  var h = '<div class="qbox"><b>PAUSED</b>';
-  if (spec.story) h += '<button id="qKeep" class="pri">KEEP RUN, QUIT TO MENU</button><small>Replay this level from the start later</small><button id="qAband">ABANDON RUN</button>';
-  else h += '<button id="qKeep" class="pri">QUIT TO MENU</button><small>' + (spec.practice ? "" : "This round won't be scored") + "</small>";
-  h += '<button id="qResume">RESUME</button></div>';
-  var q = $("quitDlg"); q.innerHTML = h; q.style.display = "flex";
-  $("qResume").onclick = function () { AudioSys.sfx("tap"); q.style.display = "none"; if (pausedFrom === "countdown") { beginCountdown(); } else { phase = "play"; lastT = performance.now(); AudioSys.music("game"); } };
-  $("qKeep").onclick = function () { AudioSys.sfx("tap"); q.style.display = "none"; phase = "idle"; round = null; toStart(); };
-  if ($("qAband")) { var armed = false; $("qAband").onclick = function () {
-    if (!armed) { armed = true; $("qAband").textContent = "TAP AGAIN TO ABANDON"; return; }
-    q.style.display = "none"; phase = "idle"; round = null; RUN.over = true; stockEarned = endRun(RUN, META, CONFIG); saveMeta(); saveRun(); pageRunEnd();
-  }; }
 }
 function updateHud() {
   if (spec.practice) { $("hudL").textContent = "PRACTICE · NO CLOCK"; $("hudR").textContent = ""; }
@@ -327,17 +269,13 @@ function beginLevel() {
   AudioSys.init(); sanitizeConfig();
   spec = mode === "story" ? levelSpec(RUN, META, CONFIG) : mode === "practice" ? practiceSpec() : arcadeSpec(CONFIG, t2Unlocked(), META);
   round = createPaintRound(CONFIG, spec, makeRng(newSeed()));
-  paint = null; lastSecShown = -1; builtKey = ""; LY = null; undoStack = []; bucketArmed = false; wells = []; for (var w = 0; w < spec.wells; w++) wells.push(0); brushWell = null; lastWell = 0; drag = null; peekUsed = false; peekUntil = -1; hiddenShown = false; spinAng = 0; fogPts = [];
+  paint = null; lastSecShown = -1; builtKey = ""; LY = null; wells = []; for (var w = 0; w < spec.wells; w++) wells.push(0); brushWell = null; lastWell = 0; drag = null; peekUsed = false; peekUntil = -1; hiddenShown = false; spinAng = 0; fogPts = [];
   if (brush === undefined || brush > 6) brush = 1;
   wrapEl.style.transform = "";
   show("game");
   $("skip").classList.toggle("off", !CONFIG.skipEnabled);
   $("fly").style.display = "none"; $("flash").classList.remove("go");
   layout(); setupTools(); updateOrderUI(false); updateTimer(); updateHud();
-  $("quitDlg").style.display = "none";
-  beginCountdown(true);
-}
-function beginCountdown(first) {
   var my = ++cdToken, ban = $("banner");
   function count() {
     ban.style.display = "none";
@@ -352,7 +290,7 @@ function beginCountdown(first) {
     })();
   }
   $("cd").style.display = "none";
-  if (first && spec.mods.length) { // boss banner before the countdown
+  if (spec.mods.length) { // boss banner before the countdown
     phase = "countdown"; AudioSys.music(null); AudioSys.sfx("end");
     ban.innerHTML = "<small>BOSS LEVEL</small>" + spec.mods.map(function (m) { return "<b>" + MOD_INFO[m][0] + "</b><span>" + MOD_INFO[m][1] + "</span>"; }).join("");
     ban.style.display = "block"; setTimeout(count, 2400);
@@ -369,7 +307,7 @@ function endRound() {
   var my = ++cdToken;
   setTimeout(function () { if (my === cdToken) showResults(); }, 1000);
 }
-function newPlanetUI(slide) { undoStack = []; bucketArmed = false; buildLayers(); renderPlanet(); refreshLocked(); updateOrderUI(slide); updateHud(); refreshTools(); fogPts = []; if (round.mod.fog) drawFog(performance.now()); }
+function newPlanetUI(slide) { buildLayers(); renderPlanet(); refreshLocked(); updateOrderUI(slide); updateHud(); fogPts = []; if (round.mod.fog) drawFog(performance.now()); }
 function doSkip() {
   if (phase !== "play") return;
   paint = null;
@@ -385,7 +323,6 @@ function handleEvents() {
     else if (ev[i] === "meteorWarn") AudioSys.sfx("tick");
     else if (ev[i] === "meteor") { paintCells(null, round.grid.cells); renderPlanet(); AudioSys.sfx("erase"); Haptic.error(); }
     else if (ev[i] === "locked") { refreshLocked(); AudioSys.sfx("tap"); }
-    else if (ev[i] === "thaw") { refreshTools(); AudioSys.sfx("beep"); }
     else if (ev[i] === "freeSkip") { var fl = $("flash"); setTimeout(function () { fl.innerHTML = "<small>FREE SKIP +" + CONFIG.freeSkipSec + " s</small>"; fl.classList.remove("go"); void fl.offsetWidth; fl.classList.add("go"); }, 50); }
   }
 }
@@ -408,13 +345,6 @@ function toScreen(c, gx, gy) {
     if (e.target && e.target.closest && e.target.closest("button")) return;
     e.preventDefault();
     if (phase !== "play" || paint) return;
-    if (spec.undo) { undoStack.push(snapGrid(round)); if (undoStack.length > 6) undoStack.shift(); }
-    if (bucketArmed && !round.bucketUsed) { // fill bucket: one tap floods the connected same-terrain area
-      var gp = toGrid(wrapCentre(), e.clientX, e.clientY - CONFIG.brushOffsetY), gx = Math.floor(gp.x), gy = Math.floor(gp.y), G = round.grid.G;
-      var ch = gx >= 0 && gy >= 0 && gx < G && gy < G ? bucketFill(round, gy * G + gx, activeId()) : [];
-      if (!ch.length) { if (spec.undo) undoStack.pop(); AudioSys.sfx("bonk"); Haptic.error(); return; }
-      bucketArmed = false; AudioSys.sfx("drop"); Haptic.confirm(); afterPaint(ch); refreshTools(); return;
-    }
     try { mid.setPointerCapture(e.pointerId); } catch (err) { }
     paint = { id: e.pointerId, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, c: wrapCentre(), buzz: false };
     Haptic.paint();
@@ -424,25 +354,11 @@ function toScreen(c, gx, gy) {
     if (!paint || e.pointerId !== paint.id) return;
     try { mid.releasePointerCapture(e.pointerId); } catch (err) { }
     paint = null; if (pendingLayout) layout();
-    if (spec && spec.undo && undoStack.length && round && undoStack[undoStack.length - 1].planet === round.planetNo && countSame(undoStack[undoStack.length - 1])) undoStack.pop(); // a stroke that changed nothing
-    if (round) refreshTools();
   }
-  function countSame(sn) { var c = round.grid.cells; for (var i = 0; i < c.length; i++) if (c[i] !== sn.cells[i]) return false; return true; }
   mid.addEventListener("pointerup", stop); mid.addEventListener("pointercancel", stop);
   BOTS.forEach(function (b) {
     $("bot_" + b).addEventListener("pointerdown", function (e) { e.preventDefault(); e.stopPropagation(); if (phase === "play" || phase === "countdown") pressBot(b); });
   });
-  function tool(id, fn) { $(id).addEventListener("pointerdown", function (e) { e.preventDefault(); e.stopPropagation(); if (phase === "play" && round) fn(); }); }
-  tool("undoBtn", function () {
-    var sn = undoStack.pop();
-    if (!roundUndo(round, sn)) { AudioSys.sfx("bonk"); refreshTools(); return; }
-    paintCells(null, round.grid.cells); renderPlanet(); AudioSys.sfx("skip"); refreshTools();
-  });
-  tool("freezeBtn", function () { if (roundFreeze(round)) { AudioSys.sfx("coin"); Haptic.confirm(); } refreshTools(); });
-  tool("bucketBtn", function () { if (round.bucketUsed) return; bucketArmed = !bucketArmed; AudioSys.sfx("tap"); refreshTools(); });
-  tool("dUp", function () { setBrushPct(1); }); tool("dDn", function () { setBrushPct(-1); });
-  ["circle", "square", "triangle"].forEach(function (k) { tool("sh_" + k, function () { setBrushShape(k); }); });
-  $("quitBtn").addEventListener("pointerdown", function (e) { e.preventDefault(); e.stopPropagation(); AudioSys.sfx("tap"); openQuit(); });
   $("peekBtn").addEventListener("pointerdown", function (e) {
     e.preventDefault(); e.stopPropagation();
     if (phase !== "play" || peekUsed) return;
@@ -463,9 +379,6 @@ function doSpray(now) {
   if (!changed.length) return;
   paint.buzz = true;
   if (now - lastHiss > 90) { lastHiss = now; AudioSys.sfx(id === 0 ? "rot" : "spray", 3); }
-  afterPaint(changed);
-}
-function afterPaint(changed) { // redraw changed squares; ship the planet if it is done
   paintCells(changed, round.grid.cells);
   var fin = paintFinishIfDone(round);
   if (fin) { // finished: ship it (no grade until the review) and bring in the next customer's planet
@@ -500,17 +413,9 @@ function drawCursor() {
   }
   if (!paint) return;
   var x = paint.x, y = paint.y - CONFIG.brushOffsetY, col = TCOL[activeId()] || "#f4e6c8";
-  var a = spinAng * Math.PI / 180;
-  function outline(X, Y) {
-    gctx.save(); gctx.translate(X, Y); gctx.rotate(a); gctx.beginPath();
-    if (round.shape === "square") gctx.rect(-rad, -rad, rad * 2, rad * 2);
-    else if (round.shape === "triangle") { gctx.moveTo(0, -rad); gctx.lineTo(rad, rad); gctx.lineTo(-rad, rad); gctx.closePath(); }
-    else gctx.arc(0, 0, rad, 0, 7);
-    gctx.restore();
-  }
   function ring(X, Y) {
-    gctx.strokeStyle = "rgba(5,6,15,.8)"; gctx.lineWidth = 4; outline(X, Y); gctx.stroke();
-    gctx.strokeStyle = col; gctx.lineWidth = 2; outline(X, Y); gctx.stroke();
+    gctx.strokeStyle = "rgba(5,6,15,.8)"; gctx.lineWidth = 4; gctx.beginPath(); gctx.arc(X, Y, rad, 0, 7); gctx.stroke();
+    gctx.strokeStyle = col; gctx.lineWidth = 2; gctx.beginPath(); gctx.arc(X, Y, rad, 0, 7); gctx.stroke();
   }
   ring(x, y);
   if (round.mod.mirror) { var g = toGrid(paint.c, x, y), q = toScreen(paint.c, round.grid.G - g.x, g.y); ring(q.x, q.y); }
@@ -526,7 +431,7 @@ function frame(now) {
     if (hide !== hiddenShown) { hiddenShown = hide; updateOrderUI(false); }
     if (peekUntil >= 0) { if (round.elapsed < peekUntil) showPct(); else { peekUntil = -1; if (!CONFIG.debugLivePct) $("debug").textContent = ""; } }
     if (round.mod.fog) drawFog(now);
-    updateTimer(); if (round.frozen > 0) refreshTools();
+    updateTimer();
     if (round.over) endRound();
   } else if (phase === "recap" && sys && $("recap").classList.contains("on")) { solarT += dt; drawSolar($("solar"), sys, solarT, solarSel); }
   drawCursor();
@@ -538,7 +443,7 @@ function miniPlanet(pic) {
   var c = document.createElement("canvas"); c.width = pic.width; c.height = pic.height; c.style.width = c.style.height = "84px";
   c.getContext("2d").drawImage(pic, 0, 0); return c;
 }
-function arcadeKey() { return (CONFIG.arcadeCount || "R") + (CONFIG.randomShapes ? "S" : "C") + (CONFIG.arcadeTier2 && t2Unlocked() ? "T" : "") + (CONFIG.arcadeDialSize ? "z" : "") + (CONFIG.arcadeDialShape ? "h" : ""); }
+function arcadeKey() { return (CONFIG.arcadeCount || "R") + (CONFIG.randomShapes ? "S" : "C") + (CONFIG.arcadeTier2 && t2Unlocked() ? "T" : ""); }
 var spinToken = 0;
 function spinGrade(final, gi, done) { // slot-machine reel for the overall grade, then the grade sting
   var el = $("ogReel"), my = ++spinToken, n = 0, steps = 22, letters = GRADES;
@@ -562,7 +467,7 @@ function spinGrade(final, gi, done) { // slot-machine reel for the overall grade
 function showResults() {
   var sum = summarizeRound(round), body = $("recapBody"), html = "", res = null, lvl = "", best = false, prac = !!spec.practice;
   sys = makeSystem(round.results, makeRng(newSeed()), !!META.hq.suns); solarT = 0; solarSel = -1; stockEarned = 0;
-  var credits = "pay " + sum.payments + " MC &nbsp;" + (sum.bonus >= 0 ? "+" : "&minus;") + " " + Math.abs(sum.bonus) + " grade bonus" + (sum.t2 ? " &nbsp;(incl. " + sum.t2 + " tier-2 multiplier)" : "") + (sum.steady ? " &nbsp;+ " + sum.steady + " steady payout" : "") + (sum.tips ? " &nbsp;+ " + sum.tips + " speed tips" : "");
+  var credits = "pay " + sum.payments + " MC &nbsp;" + (sum.bonus >= 0 ? "+" : "&minus;") + " " + Math.abs(sum.bonus) + " grade bonus" + (sum.t2 ? " &nbsp;(incl. " + sum.t2 + " tier-2 multiplier)" : "") + (sum.steady ? " &nbsp;+ " + sum.steady + " steady payout" : "");
   var reel = '<div class="og">OVERALL GRADE <b id="ogReel" class="reel">?</b></div>';
   if (spec.story) {
     lvl = "GALAXY " + (spec.g + 1) + " &middot; " + (spec.boss ? "BOSS" : "LEVEL " + (spec.l + 1));
@@ -570,7 +475,7 @@ function showResults() {
     if (RUN.level >= LPG && !META.arcadeTier2Unlocked) { META.arcadeTier2Unlocked = true; saveMeta(); }
     if (RUN.over) { best = RUN.points > META.best; stockEarned = endRun(RUN, META, CONFIG); saveMeta(); }
     saveRun();
-    html = '<div id="totals"><div class="lbl">' + lvl + '</div><div class="big">' + sum.points + " / " + res.quota + ' PTS</div>' + (sum.cushion ? '<div class="sm">incl. +' + sum.cushion + " grade cushion</div>" : "") +
+    html = '<div id="totals"><div class="lbl">' + lvl + '</div><div class="big">' + sum.points + " / " + res.quota + ' PTS</div>' +
       '<div id="stamp" class="stamp hide ' + (res.passed ? "pass" : "fail") + '">' + (res.shielded ? "SHIELDED PASS" : res.passed ? "QUOTA PASSED" : "QUOTA FAILED") + "</div>" + reel +
       '<div id="newBest" class="newbest hide">NEW BEST RUN!</div>' +
       '<div class="sm">credits earned: ' + sum.total + " MC &nbsp;(" + credits + ")<br>wallet: " + RUN.wallet + " MC &middot; run points: " + RUN.points + "</div></div>";
@@ -597,9 +502,9 @@ function showResults() {
   round.results.forEach(function (p, i) {
     var el = document.createElement("div"); el.className = "pcard"; el.id = "pc" + i;
     el.appendChild(miniPlanet(p.pic));
-    var t = '<div class="pname">' + p.order.planet + "<small>for " + p.order.name + '</small></div><table><tr><td>#' + (i + 1) + '</td><td class="n">target</td><td class="n">got</td><td class="n">diff</td></tr>';
+    var t = '<div class="pname">' + p.order.planet + "<small>for " + p.order.name + '</small></div><table><tr><td>#' + (i + 1) + '</td><td class="n">want</td><td class="n">got</td><td class="n">diff</td></tr>';
     p.rows.forEach(function (r) { t += '<tr><td style="color:' + TCOL[r.terrain] + '">' + tname(r.terrain) + '</td><td class="n">' + r.target + '%</td><td class="n">' + r.actual + '%</td><td class="n">' + r.err + "</td></tr>"; });
-    t += '<tr><td colspan="3">SUM DIFF</td><td class="n">' + p.S + '</td></tr><tr><td colspan="4">base ' + p.basePay + (p.order.mult > 100 ? " x" + p.order.mult / 100 : "") + " &rarr; paid " + p.paid + (p.t2 ? " (incl. +" + p.t2 + " tier-2)" : "") + (p.steady ? " +" + p.steady : "") + (p.tip ? " +" + p.tip + " tip" : "") + " MC &middot; " + p.seconds.toFixed(1) + "s &middot; " + p.points + " pts" + (p.vip ? " (VIP: nothing below B)" : "") + "</td></tr></table>";
+    t += '<tr><td colspan="3">SUM DIFF</td><td class="n">' + p.S + '</td></tr><tr><td colspan="4">base ' + p.basePay + (p.order.mult > 100 ? " x" + p.order.mult / 100 : "") + " &rarr; paid " + p.paid + (p.t2 ? " (incl. +" + p.t2 + " tier-2)" : "") + (p.steady ? " +" + p.steady : "") + " MC &middot; " + p.seconds.toFixed(1) + "s &middot; " + p.points + " pts" + (p.vip ? " (VIP: nothing below B)" : "") + "</td></tr></table>";
     var w = document.createElement("div"); w.style.flex = "1"; w.innerHTML = t; el.appendChild(w);
     var g = document.createElement("div"); g.className = "pg"; g.innerHTML = p.grade + "<small>GRADE</small>"; el.appendChild(g);
     body.appendChild(el);
@@ -700,17 +605,16 @@ function galaxySlides(info) {
   var g = info.g, sl = [], adds = [];
   if (info.moreTerrains) adds.push("<li><b>+1 TERRAIN PER ORDER</b> (now " + info.terrains + ")</li>");
   if (info.comp) adds.push("<li><b>" + COMP_INFO[info.comp][0] + "</b> " + COMP_INFO[info.comp][1] + "</li>");
-  var mixes = info.mixes || (info.mix ? [info.mix] : []);
-  mixes.forEach(function (id) { var m = MIXES.filter(function (x) { return x.id === id; })[0]; adds.push("<li><b>NEW RECIPE: " + TERRAINS[m.out].name + "</b> " + TERRAINS[m.a].name + " + " + TERRAINS[m.b].name + "</li>"); });
+  if (info.mix) { var m = MIXES.filter(function (x) { return x.id === info.mix; })[0]; adds.push("<li><b>NEW RECIPE: " + TERRAINS[m.out].name + "</b> " + TERRAINS[m.a].name + " + " + TERRAINS[m.b].name + "</li>"); }
   if (info.newTerrains.length) adds.push("<li><b>NOW ORDERED:</b> " + chipRow(info.newTerrains) + "</li>");
   if (g > 0) adds.push("<li><b>STILL IN EFFECT:</b> everything from earlier galaxies</li>");
-  if (g === 0) adds = ["<li><b>" + CONFIG.galaxyTerrains[0] + " TERRAINS PER ORDER</b>, round planets in all sizes</li>", "<li><b>YOUR MIXING WELL</b> sits right of the paints. Recipes and bots arrive in later galaxies.</li>", "<li><b>" + LPG + " LEVELS</b>: " + (LPG - 1) + " normal, then a boss</li>"];
+  if (g === 0) adds = ["<li><b>" + CONFIG.galaxyTerrains[0] + " TERRAINS PER ORDER</b>, round planets</li>", "<li><b>YOUR MIXING WELL</b> sits right of the paints. Recipes and bots arrive in later galaxies.</li>", "<li><b>" + LPG + " LEVELS</b>: " + (LPG - 1) + " normal, then a boss</li>"];
   sl.push({ h: '<small>GALAXY ' + (g + 1) + " OF " + GALAXIES + "</small>" + info.name.toUpperCase(), html: "<ul>" + adds.join("") + "</ul>",
     draw: function (el) { var c = document.createElement("canvas"); c.className = "galart"; el.appendChild(c); drawGalaxyArt(c, info); } });
   if (info.comp && info.comp.indexOf("bot:") === 0) sl.push(botSlide(info.comp.slice(4)));
   if (info.comp && info.comp.indexOf("shapes:") === 0) sl.push({ h: COMP_INFO[info.comp][0], html: "<p>" + COMP_INFO[info.comp][1] + ". Same brush, same scoring: percentages are of the planet's own squares.</p>", draw: function (el) { shapeThumbs(el, SHAPE_SETS[info.comp.slice(7)]); } });
   if (info.comp === "size") sl.push({ h: COMP_INFO.size[0], html: "<p>" + COMP_INFO.size[1] + ".</p>", draw: function (el) { shapeThumbs(el, ["circle"]); var a = el.lastChild; a.style.width = a.style.height = "28px"; shapeThumbs(el, ["circle"]); } });
-  mixes.forEach(function (id) { sl.push(mixSlide(id)); });
+  if (info.mix) sl.push(mixSlide(info.mix));
   return sl;
 }
 function showGalaxy(g, then) {
@@ -722,7 +626,7 @@ function ownedText(run) {
   var b = BOTS.filter(function (x) { return run.owned.bots[x]; }).map(function (x) { return BOT_NAMES[x]; });
   var m = MIXES.filter(function (x) { return run.owned.mixes[x.id]; }).map(function (x) { return TERRAINS[x.out].name; });
   var it = []; if (run.items.brush) it.push("BRUSH +" + run.items.brush); if (run.items.time) it.push("+" + run.items.time * CONFIG.timeStackSec + " s");
-  [["peek", "PEEK"], ["auto", "AUTO-FINISH"], ["steady", "STEADY PAYOUT"], ["calm", "CALM TOKEN"], ["skips", "FREE SKIPS"], ["boost", "MULTIPLIER BOOST"], ["dialSize", "SIZE DIAL"], ["dialShape", "SHAPE DIAL"], ["undo", "UNDO"], ["freeze", "TIME FREEZE"], ["bucket", "FILL BUCKET"], ["cushion", "GRADE CUSHION"], ["tip", "SPEED TIP"]].forEach(function (p) { if (run.items[p[0]]) it.push(p[1]); });
+  [["peek", "PEEK"], ["auto", "AUTO-FINISH"], ["steady", "STEADY PAYOUT"], ["well2", "SECOND WELL"], ["calm", "CALM TOKEN"], ["skips", "FREE SKIPS"], ["boost", "MULTIPLIER BOOST"]].forEach(function (p) { if (run.items[p[0]]) it.push(p[1]); });
   if (run.items.shield === 1) it.push("QUOTA SHIELD"); if (run.items.shield === 2) it.push("SHIELD (used)");
   return "bots: " + (b.join(", ") || "none") + "<br>recipes: " + (m.join(", ") || "none") + "<br>items: " + (it.join(", ") || "none");
 }
@@ -799,17 +703,6 @@ function pageHQ() {
     b.onclick = function () { if (buyHQ(META, b.getAttribute("data-hq"), CONFIG)) { AudioSys.sfx("coin"); saveMeta(); pageHQ(); } else AudioSys.sfx("bonk"); };
   });
 }
-function pageRecipes() { // reference list of every tier-2/3 recipe
-  var h = "";
-  BOTS.forEach(function (b) {
-    var rec = BOT_RECIPES[b];
-    h += '<div class="note"><b>' + BOT_NAMES[b] + "</b></div>" + Object.keys(rec).map(function (k) { return recipeLine(+k, BOT_NAMES[b], rec[k]); }).join("");
-  });
-  h += '<div class="note"><b>MIX (drop both into the well, either order)</b></div>' + MIXES.map(function (m) { return recipeLine(m.a, "+ " + TERRAINS[m.b].name, m.out); }).join("");
-  h += '<div class="rbtns"><button id="pgRecBack" class="pri">BACK</button></div>';
-  page("TERRAIN RECIPES", h);
-  $("pageBack").onclick = $("pgRecBack").onclick = function () { AudioSys.sfx("tap"); pageArcade(); };
-}
 function pageArcade() {
   mode = "arcade";
   function row(label, key, opts, names, locked) {
@@ -817,17 +710,15 @@ function pageArcade() {
       return '<button data-k="' + key + '" data-v="' + i + '"' + (CONFIG[key] === o ? ' class="sel"' : "") + (locked ? " disabled" : "") + ">" + names[i] + "</button>";
     }).join("") + "</div></div>";
   }
-  var OPT = { arcadeCount: [3, 4, 5, 0], randomShapes: [false, true], arcadeTier2: [false, true], arcadeDialSize: [false, true], arcadeDialShape: [false, true] }, un = t2Unlocked(), bst = META.bestArc[arcadeKey()];
+  var OPT = { arcadeCount: [3, 4, 5, 0], randomShapes: [false, true], arcadeTier2: [false, true] }, un = t2Unlocked(), bst = META.bestArc[arcadeKey()];
   var h = row("Terrains per order", "arcadeCount", OPT.arcadeCount, ["3", "4", "5", "RANDOM"]) + row("Planet shapes", "randomShapes", OPT.randomShapes, ["CIRCLE", "RANDOM"]) +
     row("Tier-2 terrains" + (un ? "" : " (reach Galaxy 2)"), "arcadeTier2", OPT.arcadeTier2, ["OFF", "ON"], !un) +
-    row("Brush size dial", "arcadeDialSize", OPT.arcadeDialSize, ["OFF", "ON"]) + row("Brush shape dial", "arcadeDialShape", OPT.arcadeDialShape, ["OFF", "ON"]) +
     '<div class="wal"><div><b>' + (bst === undefined ? "-" : bst) + '</b>HIGH SCORE (THESE OPTIONS)</div></div>' +
     '<div class="note">' + (CONFIG.arcadeTier2 && un ? "Tier-2 ON: every bot and every recipe works in your well this round." : "One " + CONFIG.roundSeconds + " s round. Score = credits.") + "</div>" +
-    '<div class="rbtns"><button id="pgGo" class="pri">PLAY</button><button id="pgRec">TERRAIN RECIPE LIST</button></div>';
+    '<div class="rbtns"><button id="pgGo" class="pri">PLAY</button></div>';
   page("ARCADE", h);
-  $("pgRec").onclick = function () { AudioSys.sfx("tap"); pageRecipes(); };
   Array.prototype.forEach.call(document.querySelectorAll("[data-k]"), function (b) {
-    b.onclick = function () { var k = b.getAttribute("data-k"); CONFIG[k] = OPT[k][+b.getAttribute("data-v")]; saveJSON(CFG_KEY, CONFIG); AudioSys.sfx("tap"); pageArcade(); };
+    b.onclick = function () { var k = b.getAttribute("data-k"); CONFIG[k] = OPT[k][+b.getAttribute("data-v")]; saveJSON("tpbq_cfg_main2", CONFIG); AudioSys.sfx("tap"); pageArcade(); };
   });
   $("pgGo").onclick = function () { beginLevel(); };
 }
@@ -859,7 +750,7 @@ function tutorial() {
     { h: "3 &middot; WELLS &amp; TIER 2", html: "<p><b>Drag</b> a swatch into the <b>WELL</b> to the right of the paints. Drop a second terrain in: if it's a recipe they combine (DESERT + SEA = BEACH), if not it replaces the first. Bots at the planet corners transform what's in the well. Tap the well to paint with it. Orders with tier-2 terrains pay up to <b>x2</b>.</p>",
       draw: function (el) { wellArt(el, 2, 3, 21); } },
     { h: "4 &middot; SCORING", html: "<p>Add up how far each percentage is off. <b>" + gm[0] + " or less = S</b>, " + gm[1] + " = A, " + gm[2] + " = B, " + gm[3] + " = C, " + gm[4] + " = D, more = F. Better grades pay more credits and earn points: S " + pb[0] + ", A " + pb[1] + ", B " + pb[2] + ", C " + pb[3] + ", D " + pb[4] + ". Grades are revealed at the end of the round.</p>",
-      draw: function (el) { el.innerHTML = '<table class="ttab"><tr><td></td><td>target</td><td>got</td><td>diff</td></tr><tr><td>FOREST</td><td>50</td><td>53</td><td>3</td></tr><tr><td>SEA</td><td>30</td><td>28</td><td>2</td></tr><tr><td>DESERT</td><td>20</td><td>19</td><td>1</td></tr><tr><td><b>SUM</b></td><td></td><td></td><td><b>6 = A</b></td></tr></table>'; } },
+      draw: function (el) { el.innerHTML = '<table class="ttab"><tr><td></td><td>want</td><td>got</td><td>diff</td></tr><tr><td>FOREST</td><td>50</td><td>53</td><td>3</td></tr><tr><td>SEA</td><td>30</td><td>28</td><td>2</td></tr><tr><td>DESERT</td><td>20</td><td>19</td><td>1</td></tr><tr><td><b>SUM</b></td><td></td><td></td><td><b>6 = A</b></td></tr></table>'; } },
     { h: "5 &middot; WIN &amp; HIGH SCORES", html: "<p><b>STORY:</b> " + GALAXIES + " galaxies of " + LPG + " levels. Each level is one " + CONFIG.roundSeconds + " s round with a points <b>quota</b>; miss it and the run ends. Every galaxy adds a new twist and every boss has a modifier. Spend credits in the store between levels. Your run points become <b>Stock</b> for permanent HQ unlocks.<br><b>ARCADE:</b> one round, score = credits.<br>Your best story run and arcade high score are on the main menu.</p>",
       draw: function (el) { var c = document.createElement("canvas"); c.className = "galart"; el.appendChild(c); drawGalaxyArt(c, { g: 3, comp: "size" }); } }
   ];
@@ -867,10 +758,10 @@ function tutorial() {
 }
 
 /* ----- start screen / settings ----- */
-var STYLE_NAMES = { chip: "CHIPTUNE", wave: "SYNTHWAVE", funk: "70s FUNK", poster: "INKED POSTER", classic: "CLASSIC NEON", a: "A CARDS", b: "B TRAY", c: "C CHIPS" };
+var STYLE_NAMES = { chip: "CHIPTUNE", wave: "SYNTHWAVE", funk: "70s FUNK", poster: "INKED POSTER", classic: "CLASSIC NEON" };
 var SETTINGS = [
   ["#", "LOOK AND SOUND"],
-  ["artStyle", "Art style", ["poster", "classic"]], ["paletteLayout", "Palette layout", ["a", "b", "c"]], ["musicStyle", "Music style", MUSIC_STYLES], ["musicVolume", "Music volume 0-100"], ["sfxVolume", "SFX volume 0-100"],
+  ["artStyle", "Art style", ["poster", "classic"]], ["musicStyle", "Music style", MUSIC_STYLES], ["musicVolume", "Music volume 0-100"], ["sfxVolume", "SFX volume 0-100"],
   ["haptics", "Haptics (iPhone needs iOS 18+ and System Haptics on)"], ["hapticPaintMs", "  ms between paint ticks (lower = buzzier)"],
   ["#", "ROUND"],
   ["roundSeconds", "Round seconds"], ["GRID", "Planet grid: squares across", [25, 50, 75, 100]], ["GRID", "Planet grid: custom (8-200)"],
@@ -882,23 +773,19 @@ var SETTINGS = [
   ["pointsByGrade", "Planet points S..F"], ["stockPerPoints", "Run points per 1 Stock"],
   ["#", "STORY"],
   ["quotasG1", "Galaxy 1 quotas L1-L3, boss"], ["quotasG2", "Galaxy 2 quotas"], ["quotasG3", "Galaxy 3 quotas"], ["galaxyTerrains", "Terrains per order, galaxy 1/2/3/4"],
-  ["quotasG4", "Galaxy 4 quotas"], ["sizeVarRange", "Planet size % range (min, max)"],
+  ["quotasG4", "Galaxy 4 quotas"], ["sizeVarRange", "Planet size % when sizes vary (min, max)"],
   ["#", "TIER 2 / 3"],
   ["tier2SlotChance", "Chance a slot is tier 2/3 (0-1)"], ["tier2MultPct", "Pay % for 0,1,2,3,4+ tier-2 slots (tier 3 = 2)"], ["featuredWeight", "New-galaxy terrains: x likelier"],
   ["arcadeTier2Unlocked", "Arcade tier-2 unlocked"],
   ["#", "STORE"],
   ["storeSlots", "Store slots"], ["priceBrush", "Price: brush +15%"], ["priceTime", "Price: +10 seconds"],
-  ["pricePeek", "Price: peek"], ["priceAuto", "Price: auto-finish"], ["priceSteady", "Price: steady payout"], ["priceCalm", "Price: calm token"],
+  ["pricePeek", "Price: peek"], ["priceAuto", "Price: auto-finish"], ["priceSteady", "Price: steady payout"], ["priceWell", "Price: second well"], ["priceCalm", "Price: calm token"],
   ["priceSkips", "Price: free skips"], ["priceBoost", "Price: multiplier boost"], ["priceShield", "Price: quota shield"],
-  ["priceDialSize", "Price: brush size dial"], ["priceDialShape", "Price: brush shape dial"], ["priceUndo", "Price: undo"], ["priceFreeze", "Price: time freeze"],
-  ["priceBucket", "Price: fill bucket"], ["priceCushion", "Price: grade cushion"], ["priceTip", "Price: speed tip"],
-  ["dialMinPct", "Size dial min %"], ["dialMaxPct", "Size dial max %"], ["dialStepPct", "Size dial step %"], ["undoCount", "Undos per level"], ["freezeSec", "Freeze seconds"],
-  ["tipSec", "Speed tip: under sec"], ["tipCredits", "Speed tip credits"],
   ["freeSkipCount", "Free skips per level"], ["freeSkipSec", "Seconds per free skip"], ["shieldMargin", "Quota shield covers a miss of up to"],
   ["maxBrushStacks", "Max brush stacks"], ["maxTimeStacks", "Max time stacks"],
   ["brushStackMul", "Brush multiplier per stack"], ["timeStackSec", "Seconds per time stack"], ["peekSec", "Peek seconds"], ["autoFinishPct", "Auto-finish threshold %"],
   ["#", "HQ PRICES (STOCK)"],
-  ["hqSlots", "4 store slots"], ["hqReroll", "Free store reroll"], ["hqHeadStart", "Head start time"], ["hqBigBrush", "Bigger starting brush"], ["hqSuns", "Sun styles"], ["hqHats", "Alien hats"],
+  ["hqWell2", "Start with 2 wells"], ["hqSlots", "4 store slots"], ["hqReroll", "Free store reroll"], ["hqHeadStart", "Head start time"], ["hqBigBrush", "Bigger starting brush"], ["hqSuns", "Sun styles"], ["hqHats", "Alien hats"],
   ["#", "BOSS MODIFIERS"],
   ["modHidden", "Hidden order"], ["hiddenShowSec", "  % visible for sec"], ["modShrink", "Shrinking brush"], ["shrinkToPct", "  shrinks to %"],
   ["modMeteors", "Meteors"], ["meteorEverySec", "  every sec"], ["meteorWarnSec", "  warning sec"], ["meteorSizeMul", "  size x brush"],
@@ -916,7 +803,7 @@ function refreshStart() {
   muteLabels();
 }
 function cfgChanged(k) {
-  sanitizeConfig(); saveJSON(CFG_KEY, CONFIG);
+  sanitizeConfig(); saveJSON("tpbq_cfg_main2", CONFIG);
   if (k === "musicStyle") AudioSys.restyle(); if (k === "artStyle") applyArt(); AudioSys.applyVolumes();
 }
 function buildSettings() {
@@ -1051,28 +938,24 @@ function parseSetting(k, str) {
 }
 function openSettings(from) { settingsFrom = from; buildSettings(); show("settings"); }
 
-bind("storyBtn", function () { AudioSys.init(); AudioSys.sfx("tap"); startStory(false); });
-bind("arcadeBtn", function () { AudioSys.init(); AudioSys.sfx("tap"); pageArcade(); });
-bind("hqBtn", function () { AudioSys.init(); AudioSys.sfx("tap"); pageHQ(); });
-bind("tutBtn", function () { AudioSys.init(); AudioSys.sfx("tap"); tutorial(); });
-bind("gearBtn", function () { AudioSys.init(); AudioSys.music("title"); AudioSys.sfx("tap"); openSettings("start"); });
-bind("muteBtn", function () { AudioSys.init(); AudioSys.toggleMute(); AudioSys.music("title"); muteLabels(); });
-if ($("skip")) $("skip").addEventListener("pointerdown", function (e) { e.preventDefault(); e.stopPropagation(); doSkip(); });
-(function () { // files-out-of-sync guard: index.html and js/ must come from the same build
-  var m = document.querySelector('meta[name="tpbq-build"]'), ok = m && m.getAttribute("content") === BUILD;
-  $("version").textContent = ok ? VERSION : "FILES OUT OF SYNC: re-upload index.html AND the js/ folder, then reload (" + VERSION + ")";
-  if (!ok) $("version").style.cssText = "color:#ff6a4a;opacity:1;max-width:300px;line-height:1.4";
-})();
-bind("musicBtn", function () {
-  AudioSys.init(); var i = MUSIC_STYLES.indexOf(CONFIG.musicStyle); CONFIG.musicStyle = MUSIC_STYLES[(i + 1) % MUSIC_STYLES.length]; saveJSON(CFG_KEY, CONFIG);
+$("storyBtn").onclick = function () { AudioSys.init(); AudioSys.sfx("tap"); startStory(false); };
+$("arcadeBtn").onclick = function () { AudioSys.init(); AudioSys.sfx("tap"); pageArcade(); };
+$("hqBtn").onclick = function () { AudioSys.init(); AudioSys.sfx("tap"); pageHQ(); };
+$("tutBtn").onclick = function () { AudioSys.init(); AudioSys.sfx("tap"); tutorial(); };
+$("gearBtn").onclick = function () { AudioSys.init(); AudioSys.music("title"); AudioSys.sfx("tap"); openSettings("start"); };
+$("muteBtn").onclick = function () { AudioSys.init(); AudioSys.toggleMute(); AudioSys.music("title"); muteLabels(); };
+$("skip").addEventListener("pointerdown", function (e) { e.preventDefault(); e.stopPropagation(); doSkip(); });
+$("version").textContent = VERSION;
+$("musicBtn").onclick = function () {
+  AudioSys.init(); var i = MUSIC_STYLES.indexOf(CONFIG.musicStyle); CONFIG.musicStyle = MUSIC_STYLES[(i + 1) % MUSIC_STYLES.length]; saveJSON("tpbq_cfg_main2", CONFIG);
   refreshStart(); AudioSys.music("title"); AudioSys.restyle();
-});
-bind("setClose", function () {
+};
+$("setClose").onclick = function () {
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   AudioSys.sfx("tap"); refreshStart(); show(settingsFrom); layout();
-});
-bind("hapTest", function () { Haptic.tap(); setTimeout(function () { Haptic.confirm(); }, 400); });
-bind("setReset", function () { CONFIG = clone(CONFIG_DEFAULTS); saveJSON(CFG_KEY, CONFIG); AudioSys.applyVolumes(); AudioSys.restyle(); applyArt(); buildSettings(); AudioSys.sfx("bonk"); });
+};
+$("hapTest").onclick = function () { Haptic.tap(); setTimeout(function () { Haptic.confirm(); }, 400); };
+$("setReset").onclick = function () { CONFIG = clone(CONFIG_DEFAULTS); saveJSON("tpbq_cfg_main2", CONFIG); AudioSys.applyVolumes(); AudioSys.restyle(); applyArt(); buildSettings(); AudioSys.sfx("bonk"); };
 
 /* ----- global guards ----- */
 document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
