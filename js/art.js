@@ -387,6 +387,13 @@ var STORE_ICONS = {
   skips: '<path d="M3 5l8 7-8 7zM12 5l8 7-8 7z" fill="#f2b33d"/><path d="M21 5v14" stroke="#f4e6c8" stroke-width="2.4"/>',
   boost: '<text x="12" y="17" text-anchor="middle" font-size="14" font-weight="900" font-family="Arial Black,Arial" fill="#f2b33d">x2</text><path d="M4 20h16" stroke="#e2622b" stroke-width="2"/>',
   shield: '<path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z" fill="#3aa7a3" stroke="#f4e6c8" stroke-width="1.8"/><path d="M8 12l3 3 5-6" stroke="#f4e6c8" stroke-width="2.2" fill="none" stroke-linecap="round"/>',
+  dialSize: '<path d="M12 2l5 6H7z" fill="#f2b33d"/><path d="M12 22l-5-6h10z" fill="#f2b33d"/><circle cx="12" cy="12" r="2.6" fill="#f4e6c8"/>',
+  dialShape: '<circle cx="6" cy="7" r="4" fill="#f4e6c8"/><rect x="13" y="3" width="8" height="8" fill="#f2b33d"/><path d="M12 13l5 9H7z" fill="#e2622b"/>',
+  undo: '<path d="M8 5L3 10l5 5" stroke="#f2b33d" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 10h9a6 6 0 0 1 0 12H9" stroke="#f4e6c8" stroke-width="2.6" fill="none" stroke-linecap="round"/>',
+  freeze: '<path d="M12 2v20M3.3 7l17.4 10M20.7 7L3.3 17" stroke="#8ec4ea" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="12" r="4.5" fill="#17383f" stroke="#f4e6c8" stroke-width="1.6"/><path d="M12 10v2.4l1.6 1" stroke="#f4e6c8" stroke-width="1.4" fill="none"/>',
+  bucket: '<path d="M5 9l7-6 7 6-7 7z" fill="#f4e6c8" stroke="#17383f" stroke-width="1.2"/><path d="M19 9c1.5 2.5 2.5 4 2.5 5.5a2.5 2.5 0 0 1-5 0c0-1.5 1-3 2.5-5.5z" fill="#3aa7a3"/><path d="M3 21h18" stroke="#f2b33d" stroke-width="2.4" stroke-linecap="round"/>',
+  cushion: '<path d="M3 9c0-3 3-4 9-4s9 1 9 4v6c0 3-3 4-9 4s-9-1-9-4z" fill="#e2622b"/><path d="M8 12h8M12 8v8" stroke="#f4e6c8" stroke-width="2" stroke-linecap="round"/>',
+  tip: '<circle cx="9" cy="14" r="7" fill="#f2b33d" stroke="#17383f" stroke-width="1.2"/><text x="9" y="18" text-anchor="middle" font-size="9" font-weight="900" font-family="Arial Black,Arial" fill="#17383f">+2</text><path d="M18 2l-3 7h3l-2 7 6-9h-3l2-5z" fill="#f4e6c8"/>',
   shop: '<path d="M3 10h18v11H3z" fill="#f4e6c8"/><path d="M2 4h20l-1 6H3z" fill="#e2622b"/><path d="M7 4v6M12 4v6M17 4v6" stroke="#f4e6c8" stroke-width="1.4"/><path d="M10 21v-6h4v6" fill="#17383f"/>'
 };
 function storeIcon(id) { return '<svg viewBox="0 0 24 24">' + (STORE_ICONS[id] || STORE_ICONS.shop) + "</svg>"; }
