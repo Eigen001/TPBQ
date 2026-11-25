@@ -337,26 +337,28 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
     const run = ctx.newRun(meta, cfg, rng(seed)), rr = rng(seed + 9999);
     if (run.comps.length !== 3 || new Set(run.comps).size !== 3 || run.comps.some((c) => !ctx.COMPLICATIONS.includes(c))) bad.push("comps");
     const g0 = ctx.enterGalaxy(run, 0, cfg, rr);
-    if (g0.name !== ctx.HOME_GALAXY || g0.comp || g0.mix || ctx.makeableList(run.owned).length) bad.push("g1 not fixed");
+    if (g0.name !== ctx.HOME_GALAXY || g0.comp || g0.mixes.length || ctx.makeableList(run.owned).length) bad.push("g1 not fixed");
     for (let g = 1; g < 4; g++) {
       const n0 = Object.keys(run.owned.mixes).length, info = ctx.enterGalaxy(run, g, cfg, rr), c = run.comps[g - 1];
       if (info.comp !== c || !info.name) bad.push("info");
       if (c.startsWith("bot:") && !run.owned.bots[c.slice(4)]) bad.push("bot not granted");
-      if (Object.keys(run.owned.mixes).length !== n0 + 1 || !info.mix) bad.push("one mix per galaxy");
-      const mx = ctx.MIXES.find((x) => x.id === info.mix); if (!ctx.makeable(mx.a, run.owned) || !ctx.makeable(mx.b, run.owned)) bad.push("mix not makeable");
-      if (ctx.enterGalaxy(run, g, cfg, rr) !== info || Object.keys(run.owned.mixes).length !== n0 + 1) bad.push("not idempotent");
+      const want = c === "recipes" ? 2 : 0, n1 = Object.keys(run.owned.mixes).length;
+      if (n1 !== n0 + want || info.mixes.length !== want) bad.push("recipes only from the recipes twist (2)");
+      info.mixes.forEach((id) => { const mx = ctx.MIXES.find((x) => x.id === id); if (!ctx.makeable(mx.a, run.owned) || !ctx.makeable(mx.b, run.owned)) bad.push("mix not makeable"); });
+      if (ctx.enterGalaxy(run, g, cfg, rr) !== info || Object.keys(run.owned.mixes).length !== n1) bad.push("not idempotent");
+      if (c.startsWith("shapes:") && (info.newTerrains.length || n1 !== n0)) bad.push("shape galaxy also added terrain");
       if (!info.newTerrains.every((t) => ctx.makeable(t, run.owned))) bad.push("new terrains");
     }
     const bots = Object.keys(run.owned.bots).length, wantBots = run.comps.filter((c) => c.startsWith("bot:")).length;
     if (bots !== wantBots) bad.push("bots only from draws");
   }
-  ok("13h 400 runs: G1 fixed, each later galaxy adds its complication + 1 makeable mix", bad.length === 0, [...new Set(bad)]);
+  ok("13h 400 runs: G1 fixed, each later galaxy adds exactly one twist (recipes twist = 2 makeable mixes)", bad.length === 0, [...new Set(bad)]);
   const run = ctx.newRun(meta, cfg, rng(7)); run.comps = ["shapes:basic", "shapes:suits", "bot:low"]; run.level = 12; ctx.catchUpGalaxies(run, cfg, rng(1));
   const sp = ctx.levelSpec(run, meta, cfg);
   ok("13i complications stack (G4 has basic + suits + low bot; sizes always vary)", sp.sizeMin === 65 && sp.shapes.includes("heart") && sp.shapes.includes("circle") && run.owned.bots.low && sp.n === 5 && run.galaxies.length === 4);
   run.level = 4; const sp2 = ctx.levelSpec(run, meta, cfg);
   ok("13j G2 only has the first complication; terrain count 4", sp2.sizeMin === 65 && sp2.shapes.includes("donut") && !sp2.shapes.includes("heart") && sp2.n === 4);
-  ok("13j2 size is no longer a galaxy complication", !ctx.COMPLICATIONS.includes("size") && ctx.COMPLICATIONS.length === 7);
+  ok("13j2 pool: 4 bots, 3 shape sets, recipes; no size", !ctx.COMPLICATIONS.includes("size") && ctx.COMPLICATIONS.length === 8 && ctx.COMPLICATIONS.includes("recipes"));
   ok("13k terrain counts 3/4/5/5", cfg.galaxyTerrains.join() === "3,4,5,5");
   // auto-finish never gives leftovers to unordered terrains
   const g = ctx.makeGrid(20, "square"), ord = { basePay: 5, slots: [{ terrain: 1, pct: 50 }, { terrain: 2, pct: 50 }] };

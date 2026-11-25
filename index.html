@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TPBQ">
-<meta name="tpbq-build" content="1.3">
+<meta name="tpbq-build" content="1.4">
 <meta http-equiv="Cache-Control" content="no-cache">
 <title>TPBQ - Tiny Planets Built Quick</title>
 <style>
@@ -333,6 +333,40 @@ body.poster #dials button,body.poster #shapes button{background:#102a30;border-w
 #shapes button.sel{background:#f2b33d!important;border-color:#f2b33d}
 #shapes i{display:block;background:currentColor}
 #shapes button.sel i{background:#17383f}
+/* ---------- v1.4: 2 x 4 palette (three looks) + coloured tool buttons ---------- */
+#bottom.palA,#bottom.palB,#bottom.palC{padding:12px 8px 14px;gap:10px;align-items:stretch}
+#hand.grid{display:grid;grid-template-columns:repeat(4,auto);justify-content:center;align-content:center;gap:8px}
+#hand.palA{row-gap:17px;padding-bottom:12px}
+#hand.grid .tile.sel{transform:none}
+#hand.grid .tile.sel:after{display:none}
+#hand.grid .tile.well{margin-left:0}
+#hand.grid .tile span{font-size:10px;letter-spacing:.5px}
+#bottom.palA #skip,#bottom.palB #skip,#bottom.palC #skip{height:auto;width:54px;border-radius:18px;font-size:14px;margin-left:0}
+#bottom.palC #skip{order:-1}
+/* B: labels inside the card, tools column set apart */
+#hand.palB .tile span{top:auto;bottom:-3px;transform:translateX(-50%);background:#f4e6c8;color:#17383f;border-radius:6px;padding:0 5px;opacity:1;box-shadow:2px 2px 0 rgba(0,0,0,.35)}
+#hand.palB .tile.tool{margin-left:10px}
+#hand.palB .tile.tool:before{content:"";position:absolute;left:-10px;top:-4px;bottom:-4px;border-left:2px dashed rgba(244,230,200,.35)}
+#hand.palB .tile.tool.sel:before{left:-5px;top:-5px;bottom:-5px;right:-5px;border-left-width:3px}
+/* C: label chips */
+#hand.palC .tile{display:flex;align-items:center;gap:4px;background:#f4e6c8;border-radius:14px;padding:0 4px 0 5px;box-shadow:3px 3px 0 rgba(0,0,0,.4)}
+#hand.palC .tile canvas{position:static;flex:none}
+#hand.palC .tile span{position:static;transform:none;margin:0;color:#17383f;opacity:1;font-size:11px;white-space:normal;line-height:1.05;letter-spacing:0;min-width:0;overflow:hidden}
+#hand.palC .tile.tool{background:#2a5a63}
+#hand.palC .tile.tool span{color:#f4e6c8}
+#hand.palC .tile.sel:before{inset:-4px;border-radius:17px}
+body:not(.poster) #hand.palC .tile{background:#141a3c;border:1.5px solid #3c4680}body:not(.poster) #hand.palC .tile span{color:#e6ecff}
+/* coloured tool buttons */
+#tools{gap:7px}
+#tools button{padding:4px 9px 4px 5px;font-size:12px;letter-spacing:.5px;border-width:0!important;border-radius:14px!important;color:#17383f!important;box-shadow:3px 3px 0 rgba(0,0,0,.45);align-items:center;gap:4px}
+#tools button.own{display:flex}
+#tools button svg{width:18px;height:18px;flex:none}
+#mid.hastools #bot_hot,#mid.hastools #bot_chill{top:60px}
+#peekBtn{background:#f2b33d!important}#undoBtn{background:#e8875a!important}#freezeBtn{background:#8ec4ea!important}#bucketBtn{background:#5fc9b5!important}
+#tools button svg path,#tools button svg circle,#tools button svg ellipse,#tools button svg rect{stroke:#17383f}
+#tools button.on{outline:3px solid #f4e6c8;outline-offset:1px}
+#freezeBtn.on{background:#d8efff!important}
+#tools button:disabled{opacity:.45}
 .shc{width:14px;height:14px;border-radius:50%}.shs{width:13px;height:13px}.sht{width:16px;height:14px;clip-path:polygon(50% 0,100% 100%,0 100%)}
 </style>
 </head>
@@ -417,9 +451,9 @@ body.poster #dials button,body.poster #shapes button{background:#102a30;border-w
 
 <canvas id="ghost"></canvas>
 
-<script src="js/logic.js?v=1.3"></script>
-<script src="js/audio.js?v=1.3"></script>
-<script src="js/art.js?v=1.3"></script>
-<script src="js/ui.js?v=1.3"></script>
+<script src="js/logic.js?v=1.4"></script>
+<script src="js/audio.js?v=1.4"></script>
+<script src="js/art.js?v=1.4"></script>
+<script src="js/ui.js?v=1.4"></script>
 </body>
 </html>
