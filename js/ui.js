@@ -1,6 +1,6 @@
 "use strict";
 /* ================= UI: screens, input, game loop, settings ================= */
-var BUILD = "1.3"; // must match <meta name="tpbq-build"> in index.html
+var BUILD = "1.4"; // must match <meta name="tpbq-build"> in index.html
 document.body.classList.toggle("poster", POSTER()); // art style first, so nothing below can leave the game in the wrong look
 function bind(id, fn) { var el = $(id); if (el) el.onclick = fn; } // a missing button (old index.html) must never stop the game loading
 var META = (function () {
@@ -132,14 +132,14 @@ function layout() {
   var D = Math.round(vw * CONFIG.canvasDiameterPct / 100), shrunk = false;
   if (inGame) { var avail = $("mid").clientHeight - 30; if (avail > 60 && D > avail) { D = avail; shrunk = true; } }
   if (inGame && spec && (spec.dialSize || spec.dialShape)) { var side = 8 + (spec.dialSize ? 36 : 0) + (spec.dialShape ? 36 : 0); if (D > vw - 2 * side) { D = vw - 2 * side; shrunk = true; } }
-  var slots = 7 + (inGame ? nWells() : 1), tw = Math.max(26, Math.min(56, Math.floor((vw - 16 - 46 - 5 * slots) / slots))), th = Math.round(tw * 1.5);
+  var pal = CONFIG.paletteLayout, tw = Math.max(48, Math.min(96, Math.floor((vw - 16 - 54 - 12 - 3 * 8 - (pal === "b" ? 10 : 0)) / 4))), th = pal === "a" ? 34 : 46;
   var changed = !L || L.vw !== vw || L.vh !== vh || L.dpr !== dpr || L.art !== CONFIG.artStyle;
   L = { dpr: dpr, vw: vw, vh: vh, D: D, Dp: Math.round(D * dpr), cw: 0, ch: 0, cwPx: D * 0.36, chPx: D * 0.54, hw: tw, hh: th, shrunk: shrunk, art: CONFIG.artStyle };
   if (changed) drawSpace();
   buildTextures();
   if (round && inGame) {
     buildLayers();
-    var k = tw + ":" + th + ":" + dpr + ":" + texKey + ":" + nWells();
+    var k = tw + ":" + th + ":" + dpr + ":" + texKey + ":" + nWells() + ":" + pal;
     if (k !== builtKey) { buildPalette(); builtKey = k; }
     renderPlanet(); fitOrder();
     if (round.mod.fog) drawFog(performance.now());
@@ -162,15 +162,26 @@ function drawHero() { // little demo planet on the start screen, drawn the same 
 /* ----- palette: 6 base terrains + erase, then the mixing well(s). Bots sit at the planet corners and act on a well. ----- */
 function activeId() { return brushWell !== null ? wells[brushWell] : brush; } // terrain the brush paints (0 = erase / empty well)
 function nWells() { return spec && spec.wells ? spec.wells : 1; }
+// 2 rows x 4: six terrains, ERASE and the WELL. Three looks (CONFIG.paletteLayout): a = cards with labels under,
+// b = cards with labels inside and a separate tools column (WELL over ERASE), c = label chips (swatch + name).
+var PAL_ORDER = { a: { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 0: 7, w: 8 }, b: { 1: 1, 2: 2, 3: 3, w: 4, 4: 5, 5: 6, 6: 7, 0: 8 }, c: { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 0: 7, w: 8 } };
+function tileCanvas(s) { // art canvas for a palette tile; size depends on the layout
+  var pal = CONFIG.paletteLayout, d = L.dpr, c = document.createElement("canvas"), chip = pal === "c";
+  var aw = chip ? L.hh - 22 : L.hw, ah = chip ? L.hh - 22 : L.hh, m = chip ? 0 : 20;
+  c.width = Math.round((aw + m) * d); c.height = Math.round((ah + m) * d); c.style.width = (aw + m) + "px"; c.style.height = (ah + m) + "px";
+  c._aw = aw; c._ah = ah; s.appendChild(c); return c;
+}
 function buildPalette() {
-  var h = $("hand"), d = L.dpr; h.innerHTML = "";
+  var h = $("hand"), d = L.dpr, pal = CONFIG.paletteLayout; h.innerHTML = ""; h.className = "grid pal" + pal.toUpperCase();
+  $("bottom").className = "pal" + pal.toUpperCase();
   PALETTE.forEach(function (id) {
-    var s = document.createElement("div"); s.className = "tile"; s.style.width = L.hw + "px"; s.style.height = L.hh + "px"; s.setAttribute("data-id", id);
-    var c = document.createElement("canvas"); c.width = Math.round((L.hw + 20) * d); c.height = Math.round((L.hh + 20) * d);
-    c.style.width = (L.hw + 20) + "px"; c.style.height = (L.hh + 20) + "px";
-    var x = c.getContext("2d"); x.setTransform(d, 0, 0, d, c.width / 2, c.height / 2); drawCard(x, id, L.hw, L.hh, 1, true);
+    var s = document.createElement("div"); s.className = "tile" + (id === 0 ? " tool" : ""); s.style.width = L.hw + "px"; s.style.height = L.hh + "px"; s.setAttribute("data-id", id);
+    s.style.order = PAL_ORDER[pal][id];
+    var c = tileCanvas(s), x = c.getContext("2d"); x.setTransform(d, 0, 0, d, c.width / 2, c.height / 2);
+    if (pal === "c" && id) { x.beginPath(); x.arc(0, 0, c._aw / 2, 0, 7); x.clip(); texDraw(x, id, 0, 0, 120, 120, -c._aw / 2, -c._aw / 2, c._aw, c._aw); }
+    else drawCard(x, id, c._aw, c._ah, 1, pal !== "c");
     var lab = document.createElement("span"); lab.textContent = id === 0 ? "ERASE" : TERRAINS[id].name;
-    s.appendChild(c); s.appendChild(lab); h.appendChild(s);
+    s.appendChild(lab); h.appendChild(s); fitLabel(lab);
     s.addEventListener("pointerdown", function (e) {
       e.preventDefault();
       if (round && round.locked.indexOf(id) >= 0) { AudioSys.sfx("bonk"); Haptic.error(); return; }
@@ -179,11 +190,11 @@ function buildPalette() {
     });
   });
   for (var w = 0; w < nWells(); w++) (function (w) {
-    var s = document.createElement("div"); s.className = "tile well"; s.id = "well" + w; s.style.width = L.hw + "px"; s.style.height = L.hh + "px";
-    var c = document.createElement("canvas"); c.width = Math.round((L.hw + 20) * d); c.height = Math.round((L.hh + 20) * d);
-    c.style.width = (L.hw + 20) + "px"; c.style.height = (L.hh + 20) + "px";
+    var s = document.createElement("div"); s.className = "tile well tool"; s.id = "well" + w; s.style.width = L.hw + "px"; s.style.height = L.hh + "px";
+    s.style.order = PAL_ORDER[CONFIG.paletteLayout].w + w;
+    tileCanvas(s);
     var lab = document.createElement("span");
-    s.appendChild(c); s.appendChild(lab); h.appendChild(s);
+    s.appendChild(lab); h.appendChild(s);
     s.addEventListener("pointerdown", function (e) {
       e.preventDefault();
       if (!wells[w]) { AudioSys.sfx("bonk"); Haptic.error(); wellHint(); return; }
@@ -192,13 +203,18 @@ function buildPalette() {
   })(w);
   refreshWells(); refreshBrushUI(); refreshLocked();
 }
+function fitLabel(sp) { // chips: shrink a long terrain name until it fits its tile
+  if (CONFIG.paletteLayout !== "c") return;
+  var f = 11; sp.style.fontSize = f + "px";
+  while (f > 7 && (sp.scrollWidth > sp.clientWidth + 1 || sp.scrollHeight > sp.parentNode.clientHeight - 4)) { f -= 0.5; sp.style.fontSize = f + "px"; }
+}
 function refreshWells() {
   for (var w = 0; w < nWells(); w++) {
     var el = $("well" + w); if (!el) continue;
     var c = el.firstChild, d = L.dpr, x = c.getContext("2d");
     x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, c.width, c.height); x.setTransform(d, 0, 0, d, c.width / 2, c.height / 2);
-    drawWell(x, wells[w], L.hw, L.hh);
-    el.lastChild.textContent = wells[w] ? TERRAINS[wells[w]].name : "WELL";
+    if (CONFIG.paletteLayout === "c") drawWell(x, wells[w], c._aw * 1.15, c._ah * 1.25); else drawWell(x, wells[w], c._aw, c._ah);
+    el.lastChild.textContent = wells[w] ? TERRAINS[wells[w]].name : "WELL"; fitLabel(el.lastChild);
   }
 }
 function wellPulse(w) { var el = $("well" + w); if (!el) return; el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse"); }
@@ -257,14 +273,17 @@ function refreshLocked() {
 function setupTools() { // show only what this round owns
   BOTS.forEach(function (b) { var el = $("bot_" + b); el.classList.toggle("own", !!round.owned.bots[b]); el.innerHTML = botSVG(b); el.style.color = BOT_COL[b]; el.style.borderColor = BOT_COL[b]; });
   $("peekBtn").classList.toggle("own", !!spec.peek && !peekUsed);
+  $("mid").classList.toggle("hastools", !!(spec.peek || spec.undo || spec.freeze || spec.bucket));
   $("dials").classList.toggle("own", !!spec.dialSize); $("shapes").classList.toggle("own", !!spec.dialShape);
   $("shapes").classList.toggle("solo", !spec.dialSize);
   refreshTools();
 }
 function refreshTools() { // UNDO / FREEZE / BUCKET buttons and the dials
   var u = $("undoBtn"), f = $("freezeBtn"), b = $("bucketBtn");
-  u.classList.toggle("own", !!spec.undo); u.textContent = "UNDO " + round.undoLeft; u.disabled = round.undoLeft <= 0 || !undoStack.length;
-  f.classList.toggle("own", !!spec.freeze && (round.freezeLeft > 0 || round.frozen > 0)); f.textContent = round.frozen > 0 ? "FROZEN " + Math.ceil(round.frozen) : "FREEZE"; f.classList.toggle("on", round.frozen > 0);
+  function lab(el, icon, t) { var h = storeIcon(icon) + "<span>" + t + "</span>"; if (el._h !== h) { el.innerHTML = h; el._h = h; } }
+  lab($("peekBtn"), "peek", "PEEK"); lab(b, "bucket", bucketArmed && !round.bucketUsed ? "TAP PLANET" : "BUCKET");
+  u.classList.toggle("own", !!spec.undo); lab(u, "undo", "UNDO " + round.undoLeft); u.disabled = round.undoLeft <= 0 || !undoStack.length;
+  f.classList.toggle("own", !!spec.freeze && (round.freezeLeft > 0 || round.frozen > 0)); lab(f, "freeze", round.frozen > 0 ? "FROZEN " + Math.ceil(round.frozen) : "FREEZE"); f.classList.toggle("on", round.frozen > 0);
   b.classList.toggle("own", !!spec.bucket); b.disabled = round.bucketUsed; b.classList.toggle("on", bucketArmed && !round.bucketUsed);
   $("dialPct").textContent = Math.round(round.basePct) + "%";
   ["circle", "square", "triangle"].forEach(function (k) { $("sh_" + k).classList.toggle("sel", round.shape === k); });
@@ -681,7 +700,8 @@ function galaxySlides(info) {
   var g = info.g, sl = [], adds = [];
   if (info.moreTerrains) adds.push("<li><b>+1 TERRAIN PER ORDER</b> (now " + info.terrains + ")</li>");
   if (info.comp) adds.push("<li><b>" + COMP_INFO[info.comp][0] + "</b> " + COMP_INFO[info.comp][1] + "</li>");
-  if (info.mix) { var m = MIXES.filter(function (x) { return x.id === info.mix; })[0]; adds.push("<li><b>NEW RECIPE: " + TERRAINS[m.out].name + "</b> " + TERRAINS[m.a].name + " + " + TERRAINS[m.b].name + "</li>"); }
+  var mixes = info.mixes || (info.mix ? [info.mix] : []);
+  mixes.forEach(function (id) { var m = MIXES.filter(function (x) { return x.id === id; })[0]; adds.push("<li><b>NEW RECIPE: " + TERRAINS[m.out].name + "</b> " + TERRAINS[m.a].name + " + " + TERRAINS[m.b].name + "</li>"); });
   if (info.newTerrains.length) adds.push("<li><b>NOW ORDERED:</b> " + chipRow(info.newTerrains) + "</li>");
   if (g > 0) adds.push("<li><b>STILL IN EFFECT:</b> everything from earlier galaxies</li>");
   if (g === 0) adds = ["<li><b>" + CONFIG.galaxyTerrains[0] + " TERRAINS PER ORDER</b>, round planets in all sizes</li>", "<li><b>YOUR MIXING WELL</b> sits right of the paints. Recipes and bots arrive in later galaxies.</li>", "<li><b>" + LPG + " LEVELS</b>: " + (LPG - 1) + " normal, then a boss</li>"];
@@ -690,7 +710,7 @@ function galaxySlides(info) {
   if (info.comp && info.comp.indexOf("bot:") === 0) sl.push(botSlide(info.comp.slice(4)));
   if (info.comp && info.comp.indexOf("shapes:") === 0) sl.push({ h: COMP_INFO[info.comp][0], html: "<p>" + COMP_INFO[info.comp][1] + ". Same brush, same scoring: percentages are of the planet's own squares.</p>", draw: function (el) { shapeThumbs(el, SHAPE_SETS[info.comp.slice(7)]); } });
   if (info.comp === "size") sl.push({ h: COMP_INFO.size[0], html: "<p>" + COMP_INFO.size[1] + ".</p>", draw: function (el) { shapeThumbs(el, ["circle"]); var a = el.lastChild; a.style.width = a.style.height = "28px"; shapeThumbs(el, ["circle"]); } });
-  if (info.mix) sl.push(mixSlide(info.mix));
+  mixes.forEach(function (id) { sl.push(mixSlide(id)); });
   return sl;
 }
 function showGalaxy(g, then) {
@@ -835,10 +855,10 @@ function tutorial() {
 }
 
 /* ----- start screen / settings ----- */
-var STYLE_NAMES = { chip: "CHIPTUNE", wave: "SYNTHWAVE", funk: "70s FUNK", poster: "INKED POSTER", classic: "CLASSIC NEON" };
+var STYLE_NAMES = { chip: "CHIPTUNE", wave: "SYNTHWAVE", funk: "70s FUNK", poster: "INKED POSTER", classic: "CLASSIC NEON", a: "A CARDS", b: "B TRAY", c: "C CHIPS" };
 var SETTINGS = [
   ["#", "LOOK AND SOUND"],
-  ["artStyle", "Art style", ["poster", "classic"]], ["musicStyle", "Music style", MUSIC_STYLES], ["musicVolume", "Music volume 0-100"], ["sfxVolume", "SFX volume 0-100"],
+  ["artStyle", "Art style", ["poster", "classic"]], ["paletteLayout", "Palette layout", ["a", "b", "c"]], ["musicStyle", "Music style", MUSIC_STYLES], ["musicVolume", "Music volume 0-100"], ["sfxVolume", "SFX volume 0-100"],
   ["haptics", "Haptics (iPhone needs iOS 18+ and System Haptics on)"], ["hapticPaintMs", "  ms between paint ticks (lower = buzzier)"],
   ["#", "ROUND"],
   ["roundSeconds", "Round seconds"], ["GRID", "Planet grid: squares across", [25, 50, 75, 100]], ["GRID", "Planet grid: custom (8-200)"],

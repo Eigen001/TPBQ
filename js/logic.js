@@ -1,5 +1,5 @@
 "use strict";
-var VERSION = "v1.3 build 2026-11-25 (60 s, dials, new items, quit)";
+var VERSION = "v1.4 build 2026-11-25 (one twist per galaxy, 2x4 palette)";
 
 /* ================= PURE LOGIC (no DOM) - tested by logic.test.mjs ================= */
 // THE one tunable object. Everything here is live-editable in the settings panel.
@@ -10,6 +10,7 @@ var CONFIG_DEFAULTS = {
   minTargetPct: 6,
   maxTargetPct: 73,
   artStyle: "poster",               // poster | classic
+  paletteLayout: "b",               // a = card grid | b = tray + tools column | c = label chips (all 2 rows x 4)
   musicStyle: "chip",               // chip | wave | funk
   brushRadiusPct: 22,               // brush radius as % of the MAX planet radius
   paintFinishPct: 99,               // planet auto-finishes at this % covered
@@ -575,13 +576,15 @@ function summarizeRound(r) {
 
 /* ----- story run: 4 galaxies x (3 levels + boss). Galaxy 1 is always the same; galaxies 2-4 each draw one complication ----- */
 var GALAXIES = 4, LPG = 4, LEVELS = GALAXIES * LPG;
-var COMPLICATIONS = ["bot:hot", "bot:chill", "bot:low", "bot:high", "shapes:basic", "shapes:suits", "shapes:long"];
+var COMPLICATIONS = ["bot:hot", "bot:chill", "bot:low", "bot:high", "shapes:basic", "shapes:suits", "shapes:long", "recipes"]; // exactly ONE per galaxy
+var RECIPES_PER_DRAW = 2;
 var COMP_INFO = {
   "bot:hot": ["HOT BOT ONLINE", "Heats the terrain in a well"], "bot:chill": ["CHILL BOT ONLINE", "Freezes the terrain in a well"],
   "bot:low": ["LOW BOT ONLINE", "Sinks the terrain in a well"], "bot:high": ["HIGH BOT ONLINE", "Raises the terrain in a well"],
   "shapes:basic": ["ODD-SHAPED PLANETS", "Squares, triangles, donuts and other polygons join the circles"],
   "shapes:suits": ["CARD-SUIT PLANETS", "Hearts, clubs, spades and diamonds join the line-up"],
   "shapes:long": ["STRETCHED PLANETS", "Crosses, moons, stars, teardrops and clouds"],
+  "recipes": ["NEW RECIPES", "Two new terrains you can mix in your well"],
   "size": ["PLANETS COME IN SIZES", "Planets range from small to full size. Your brush stays the same, so small ones fill fast"]
 };
 var GALAXY_NAMES = {
@@ -592,6 +595,7 @@ var GALAXY_NAMES = {
   "shapes:basic": ["The Geometry Sector", "Polygon Reach", "The Angular Belt", "The Protractor Nebula", "Hexagon Drift", "The Right Angle Spur", "Vertex Cluster", "The Ruler's Expanse", "Isosceles Quadrant"],
   "shapes:suits": ["The Casino Cluster", "High Stakes Expanse", "The Full House Nebula", "The Royal Flush", "Blackjack Drift", "The Poker Face Sector", "Wildcard Spur", "The House Edge", "Ace High Reach"],
   "shapes:long": ["The Contortion Nebula", "Stretch Reach", "The Noodle Expanse", "The Taffy Belt", "Elastic Drift", "The Long Way Round", "Spaghetti Spur", "The Bendy Sector", "Yoga Cluster"],
+  "recipes": ["The Kitchen Nebula", "Blender Reach", "The Fusion Cluster", "Smoothie Drift", "The Mixing Bowl", "Alloy Spur", "The Cocktail Sector", "Hybrid Expanse", "The Recipe Belt"],
   "size": ["The Scale Drift", "Variable Reach", "The One-Size-Fits-Some Cluster"]
 };
 var HOME_GALAXY = "The Home Spiral";
@@ -618,17 +622,18 @@ function runComps(run, g) { return run.comps.slice(0, Math.max(0, g)); } // comp
 // enter galaxy g: unlock its bot and one random mix recipe; returns the intro record (stored on the run)
 function enterGalaxy(run, g, cfg, rng) {
   if (run.galaxies[g]) return run.galaxies[g];
-  var before = makeableList(run.owned), comp = g > 0 ? run.comps[g - 1] : null, mix = null;
+  var before = makeableList(run.owned), comp = g > 0 ? run.comps[g - 1] : null, mixes = [];
   if (comp && comp.indexOf("bot:") === 0) run.owned.bots[comp.slice(4)] = true;
-  if (g > 0) {
+  if (comp === "recipes") for (var k = 0; k < RECIPES_PER_DRAW; k++) { // only this twist hands out mix recipes
     var cand = MIXES.filter(function (m) { return !run.owned.mixes[m.id] && makeable(m.a, run.owned) && makeable(m.b, run.owned); });
-    if (cand.length) { mix = cand[randInt(rng, 0, cand.length - 1)].id; run.owned.mixes[mix] = true; }
+    if (!cand.length) break;
+    var id = cand[randInt(rng, 0, cand.length - 1)].id; run.owned.mixes[id] = true; mixes.push(id);
   }
   var after = makeableList(run.owned);
   run.featured = after.filter(function (t) { return before.indexOf(t) < 0; });
   var names = comp ? GALAXY_NAMES[comp] : null;
   var q = rng(), gname = !names ? HOME_GALAXY : q < 0.13 ? pick(REAL_SYSTEMS, rng) : q < 0.25 ? pick(DEADPAN_SYSTEMS, rng) : pick(names, rng);
-  var info = { g: g, name: gname, comp: comp, mix: mix, newTerrains: run.featured.slice(),
+  var info = { g: g, name: gname, comp: comp, mixes: mixes, newTerrains: run.featured.slice(),
     terrains: cfg.galaxyTerrains[g], moreTerrains: g > 0 && cfg.galaxyTerrains[g] > cfg.galaxyTerrains[g - 1] };
   run.galaxies[g] = info;
   return info;
@@ -761,6 +766,7 @@ function sanitizeConfig() {
   CONFIG.GRID = Math.max(8, Math.min(200, CONFIG.GRID | 0));
   if (MUSIC_STYLES.indexOf(CONFIG.musicStyle) < 0) CONFIG.musicStyle = "chip";
   if (CONFIG.artStyle !== "classic") CONFIG.artStyle = "poster";
+  if (["a", "b", "c"].indexOf(CONFIG.paletteLayout) < 0) CONFIG.paletteLayout = "b";
   if ([0, 3, 4, 5].indexOf(CONFIG.arcadeCount) < 0) CONFIG.arcadeCount = 3;
   CONFIG.brushRadiusPct = Math.max(1, Math.min(200, CONFIG.brushRadiusPct));
   CONFIG.roundSeconds = Math.max(1, CONFIG.roundSeconds);

@@ -152,7 +152,7 @@ function drawCardPoster(c, id, w, h, poolAlpha, shadow) {
   if (id === 0) { c.fillStyle = "#17383f"; c.fillRect(x, y, w, h); }
   else texDraw(c, id, 0, 0, w * 1.25 * d, h * 1.25 * d, x, y, w, h);
   c.restore();
-  if (id === 0) { var q = w * 0.2; c.strokeStyle = "#f4e6c8"; c.lineWidth = Math.max(2.5, w * 0.08); c.lineCap = "round"; c.beginPath(); c.moveTo(-q, -q); c.lineTo(q, q); c.moveTo(q, -q); c.lineTo(-q, q); c.stroke(); }
+  if (id === 0) { var q = Math.min(w, h) * 0.2; c.strokeStyle = "#f4e6c8"; c.lineWidth = Math.max(2.5, w * 0.08); c.lineCap = "round"; c.beginPath(); c.moveTo(-q, -q); c.lineTo(q, q); c.moveTo(q, -q); c.lineTo(-q, q); c.stroke(); }
 }
 function alienSVGPoster(o) {
   var k = o.look, head = PCOL[o.tint], shirt = ["#e2622b", "#f2b33d", "#3aa7a3"][k.antenna], ink = PINK, cream = "#f4e6c8";
@@ -224,7 +224,7 @@ function drawCard(c, id, w, h, poolAlpha, shadow) {
     c.fillStyle = g; c.fillRect(-s, -s, 2 * s, 2 * s); c.lineWidth = 1; c.strokeStyle = INK; c.strokeRect(-s, -s, 2 * s, 2 * s);
     c.fillStyle = "rgba(255,255,255,.9)"; c.fillRect(-s * 0.4, -s * 0.4, s * 0.8, s * 0.8); c.restore();
   }
-  if (id === 0) { c.strokeStyle = "#ff5a7a"; c.lineWidth = Math.max(2, w * 0.05); c.lineCap = "round"; c.beginPath(); c.moveTo(-iw * 0.28, -iw * 0.28); c.lineTo(iw * 0.28, iw * 0.28); c.moveTo(iw * 0.28, -iw * 0.28); c.lineTo(-iw * 0.28, iw * 0.28); c.stroke(); }
+  if (id === 0) { var e = Math.min(iw, ih) * 0.32; c.strokeStyle = "#ff5a7a"; c.lineWidth = Math.max(2, Math.min(w, h) * 0.05); c.lineCap = "round"; c.beginPath(); c.moveTo(-e, -e); c.lineTo(e, e); c.moveTo(e, -e); c.lineTo(-e, e); c.stroke(); }
 }
 function chip(id) {
   if (id === ANY) return '<span class="chip any"></span>';
@@ -398,11 +398,11 @@ var STORE_ICONS = {
 };
 function storeIcon(id) { return '<svg viewBox="0 0 24 24">' + (STORE_ICONS[id] || STORE_ICONS.shop) + "</svg>"; }
 var GAL_COL = { home: ["#3aa7a3", "#f4e6c8"], "bot:hot": ["#e2622b", "#f2b33d"], "bot:chill": ["#8ec4ea", "#ffffff"], "bot:low": ["#2e6ebe", "#46beba"], "bot:high": ["#b8452c", "#f4dca0"],
-  "shapes:basic": ["#f2b33d", "#f4e6c8"], "shapes:suits": ["#d65430", "#f4e6c8"], "shapes:long": ["#a06be0", "#f4e6c8"], size: ["#84ba54", "#f4e6c8"] };
+  "shapes:basic": ["#f2b33d", "#f4e6c8"], "shapes:suits": ["#d65430", "#f4e6c8"], "shapes:long": ["#a06be0", "#f4e6c8"], size: ["#84ba54", "#f4e6c8"], recipes: ["#5fc9b5", "#f2b33d"] };
 function drawGalaxyArt(c, info) { // a spiral galaxy in the complication's colours
   var w = c.clientWidth || 300, h = c.clientHeight || 120, d = L.dpr, x = c.getContext("2d"), r = makeRng(77 + info.g * 13 + (info.comp || "").length), k, a;
   c.width = Math.round(w * d); c.height = Math.round(h * d); x.scale(d, d);
-  var col = GAL_COL[info.comp || "home"];
+  var col = GAL_COL[info.comp || "home"] || GAL_COL.home;
   x.fillStyle = "#17383f"; x.fillRect(0, 0, w, h);
   x.fillStyle = "#f4e6c8"; for (k = 0; k < 40; k++) star4(x, r() * w, r() * h, 0.6 + r() * 1.4);
   x.save(); x.translate(w / 2, h / 2); x.scale(1, 0.42); x.rotate(r() * 6);
