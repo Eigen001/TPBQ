@@ -1,14 +1,15 @@
 "use strict";
 /* ================= UI: screens, input, game loop, settings ================= */
-var BUILD = "1.7"; // must match <meta name="tpbq-build"> in index.html
+var BUILD = "1.8"; // must match <meta name="tpbq-build"> in index.html
 document.body.classList.toggle("poster", POSTER()); // art style first, so nothing below can leave the game in the wrong look
 function bind(id, fn) { var el = $(id); if (el) el.onclick = fn; } // a missing button (old index.html) must never stop the game loading
-var META = (function () {
+function loadMeta() {
   var d = newMeta(), m = loadJSON("tpbq_meta");
   if (m && typeof m === "object") Object.keys(d).forEach(function (k) { if (typeof m[k] === typeof d[k] && m[k] !== null) d[k] = m[k]; });
   if (d.hq.well2) { delete d.hq.well2; d.stock += 10; saveJSON("tpbq_meta", d); } // v1.3 removed the 2-wells unlock: refund it
   return d;
-})();
+}
+var META = loadMeta();
 function saveMeta() { saveJSON("tpbq_meta", META); }
 function validRun(r) {
   return !!r && typeof r === "object" && typeof r.level === "number" && r.level >= 0 && r.level < LEVELS && typeof r.wallet === "number" && typeof r.points === "number" &&
@@ -17,6 +18,22 @@ function validRun(r) {
 }
 var RUN = (function () { var r = loadJSON("tpbq_run"); return validRun(r) ? normalizeRun(r, CONFIG) : null; })();
 function saveRun() { if (RUN && !RUN.over) saveJSON("tpbq_run", RUN); else { try { localStorage.removeItem("tpbq_run"); } catch (e) { } } }
+/* ----- run seed replays (v1.8). A run loaded from a seed uses the seed's tweak settings and HQ unlocks in memory only:
+   SAVE_LOCK stops them (and any stock / high score earned) from being written over the player's own, and leaving to the menu restores both. ----- */
+var replayActive = false;
+function applyReplay(run) {
+  seedApplyCfg(CONFIG, run.cfgOv || {}); sanitizeConfig();
+  META.hq = seedHq(run.hqOv); replayActive = true; SAVE_LOCK = true;
+}
+function exitReplay() {
+  SAVE_LOCK = false; replayActive = false;
+  loadSavedConfig(CONFIG); sanitizeConfig(); META = loadMeta();
+}
+function levelSeed() { if (!RUN.levelSeed) { RUN.levelSeed = newSeed(); saveRun(); } return RUN.levelSeed; } // the next level (and galaxy intro) is drawn from this, so a seed code replays it identically
+function seedCode(where) {
+  levelSeed();
+  return seedPack(RUN, where === "store" ? { offers: offers.slice(), rerolled: rerolled, rerollN: rerollN } : null, CONFIG, META.hq, where, BUILD);
+}
 function t2Unlocked() { return !!CONFIG.arcadeTier2Unlocked || !!META.arcadeTier2Unlocked; }
 function newSeed() { return (Date.now() ^ (Math.random() * 1e9)) >>> 0; }
 /* ----- haptics. iOS Safari has no vibration API, but toggling an <input type=checkbox switch> (Safari 17.4+ / iOS 18)
@@ -326,8 +343,9 @@ function shipped(f) { // no grade mid-round: results wait for the review. Points
 function beginLevel() {
   AudioSys.init(); sanitizeConfig();
   spec = mode === "story" ? levelSpec(RUN, META, CONFIG) : mode === "practice" ? practiceSpec() : arcadeSpec(CONFIG, t2Unlocked(), META);
-  round = createPaintRound(CONFIG, spec, makeRng(newSeed()));
-  paint = null; lastSecShown = -1; builtKey = ""; LY = null; undoStack = []; bucketArmed = false; wells = []; for (var w = 0; w < spec.wells; w++) wells.push(spec.sous ? sousPick(round.owned, makeRng(newSeed())) : 0); brushWell = null; lastWell = 0; drag = null; peekUsed = false; peekUntil = -1; hiddenShown = false; spinAng = 0; fogPts = [];
+  var seed = newSeed(); if (mode === "story") { seed = levelSeed(); RUN.levelSeed = 0; saveRun(); }
+  round = createPaintRound(CONFIG, spec, makeRng(seed));
+  paint = null; lastSecShown = -1; builtKey = ""; LY = null; undoStack = []; bucketArmed = false; wells = []; for (var w = 0; w < spec.wells; w++) wells.push(spec.sous ? sousPick(round.owned, makeRng((seed ^ 0x5bd1e995) >>> 0)) : 0); brushWell = null; lastWell = 0; drag = null; peekUsed = false; peekUntil = -1; hiddenShown = false; spinAng = 0; fogPts = [];
   if (brush === undefined || brush > 6) brush = 1;
   wrapEl.style.transform = "";
   show("game");
@@ -729,7 +747,7 @@ function ownedText(run) {
 function modText(mods) { return mods.map(function (m) { return MOD_INFO[m][0]; }).join(" + "); }
 function pageRunMap() {
   mode = "story";
-  var fresh = catchUpGalaxies(RUN, CONFIG, makeRng(newSeed())); if (fresh.length) saveRun();
+  var fresh = catchUpGalaxies(RUN, CONFIG, makeRng((levelSeed() ^ 0x9e3779b9) >>> 0)); if (fresh.length) saveRun();
   var h = '<div class="wal"><div><b>' + RUN.wallet + '</b>CREDITS</div><div><b>' + RUN.points + '</b>RUN POINTS</div><div><b>' + quotaFor(RUN.level, CONFIG) + '</b>NEXT QUOTA</div></div>';
   h += '<div class="rbtns"><button id="pgGo" class="pri">START ' + (levelInfo(RUN.level).boss ? "BOSS" : "LEVEL " + (levelInfo(RUN.level).l + 1)) + "</button></div>";
   h += '<div class="note">' + ownedText(RUN) + "</div>";
@@ -739,8 +757,8 @@ function pageRunMap() {
     h += '<div class="node' + (l === RUN.level ? " cur" : l < RUN.level ? " done" : "") + (li.boss ? " boss" : "") + '"><span>' + (li.boss ? "BOSS" : "LEVEL " + (li.l + 1)) + " &middot; quota " + quotaFor(l, CONFIG) + "</span><i>" +
       (mods.length ? (known ? modText(mods) : "??? modifier") : "") + "</i></div>";
   }
-  h += '<div class="rbtns"><button id="pgAb" class="small">ABANDON RUN</button></div>';
-  page("RUN MAP", h);
+  h += seedRow() + '<div class="rbtns"><button id="pgAb" class="small">ABANDON RUN</button></div>';
+  page("RUN MAP", h); bindSeedBtn("map");
   $("pgGo").onclick = function () { AudioSys.sfx("tap"); beginLevel(); };
   var armed = false;
   $("pgAb").onclick = function () {
@@ -750,15 +768,51 @@ function pageRunMap() {
 }
 function toRunMap() { // after the store: a new galaxy gets its intro first
   var g = levelInfo(RUN.level).g;
-  if (!RUN.galaxies[g]) { enterGalaxy(RUN, g, CONFIG, makeRng(newSeed())); saveRun(); showGalaxy(g, pageRunMap); }
+  if (!RUN.galaxies[g]) { enterGalaxy(RUN, g, CONFIG, makeRng((levelSeed() ^ 0x9e3779b9) >>> 0)); saveRun(); showGalaxy(g, pageRunMap); }
   else pageRunMap();
 }
 var offers = [], rerolled = false, rerollN = 0;
+function seedRow() { return '<div class="rbtns"><button id="pgSeed" class="small">CURRENT RUN SEED</button></div>' + (RUN && RUN.replay ? '<div class="note"><b>REPLAY RUN</b> &middot; loaded from a seed. Its settings apply to this run only, and nothing from it (stock, high scores) is saved.</div>' : ""); }
+function bindSeedBtn(where) { bind("pgSeed", function () { AudioSys.sfx("tap"); pageSeed(where); }); }
+function copyText(txt, ta, done) { // clipboard API where allowed, otherwise select the text so it can be copied by hand
+  function fallback() { try { ta.focus(); ta.select(); ta.setSelectionRange(0, txt.length); done(document.execCommand && document.execCommand("copy")); } catch (e) { done(false); } }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(function () { done(true); }, fallback); else fallback();
+}
+function pageSeed(where) { // show this run's seed code for copying into Notes
+  var code = seedCode(where), li = levelInfo(RUN.level);
+  var h = '<div class="note">' + (where === "store" ? "Store" : "Run map") + " before galaxy " + (li.g + 1) + ", " + (li.boss ? "boss" : "level " + (li.l + 1)) + ". Copy this whole code into Notes. On the main menu, CONTINUE RUN FROM SEED brings you back to this exact moment.</div>" +
+    '<textarea id="seedBox" class="seedbox" readonly spellcheck="false"></textarea><div class="note" id="seedInfo">' + code.length + " characters</div>" +
+    '<div class="rbtns"><button id="pgCopy" class="pri">COPY</button><button id="pgSeedBack">BACK</button></div>';
+  page("CURRENT RUN SEED", h, false); $("seedBox").value = code;
+  $("pgCopy").onclick = function () { AudioSys.sfx("tap"); copyText(code, $("seedBox"), function (ok) { $("seedInfo").innerHTML = ok ? "<b>Copied.</b> " + code.length + " characters" : "Select all and copy by hand. " + code.length + " characters"; }); };
+  $("seedBox").onfocus = function () { this.select(); };
+  $("pgSeedBack").onclick = function () { AudioSys.sfx("tap"); if (where === "store") pageStore(false); else pageRunMap(); };
+}
+function pageSeedLoad() { // main menu: paste a code and jump into that run
+  var h = '<div class="note">Paste a run seed from CURRENT RUN SEED. It loads the story run at the store or run map it was made at, with the same shelf, the same next level, and the tweak settings and HQ unlocks it was made with. Stock and high scores from it are not saved.</div>' +
+    '<textarea id="seedIn" class="seedbox" spellcheck="false" placeholder="Paste seed here"></textarea><div class="note" id="seedMsg"></div>' +
+    '<div class="rbtns"><button id="pgLoad" class="pri">LOAD RUN</button><button id="pgSeedBack">BACK</button></div>';
+  page("CONTINUE FROM SEED", h); var armed = false;
+  $("pgSeedBack").onclick = function () { AudioSys.sfx("tap"); toStart(); };
+  $("seedIn").oninput = function () { armed = false; $("pgLoad").textContent = "LOAD RUN"; };
+  $("pgLoad").onclick = function () {
+    var u = seedUnpack($("seedIn").value), msg = $("seedMsg");
+    if (!u.ok) { AudioSys.sfx("bonk"); msg.innerHTML = '<b style="color:#e2622b">' + u.err + "</b>"; return; }
+    var run = u.data.run; run.levelSeed = typeof run.levelSeed === "number" ? run.levelSeed : 0;
+    if (!validRun(run)) { AudioSys.sfx("bonk"); msg.innerHTML = '<b style="color:#e2622b">That seed is from a different version of the game and can\'t be loaded.</b>'; return; }
+    if (RUN && !armed) { armed = true; AudioSys.sfx("tap"); $("pgLoad").textContent = "REPLACES YOUR RUN - TAP AGAIN"; return; }
+    if (replayActive) exitReplay();
+    run.replay = true; run.cfgOv = u.data.cfg || {}; run.hqOv = u.data.hq || {};
+    applyReplay(run); RUN = normalizeRun(run, CONFIG); mode = "story"; saveRun(); AudioSys.sfx("coin");
+    var st = u.data.st;
+    if (u.data.w === "store" && st && Array.isArray(st.offers)) { offers = st.offers.slice(0, 6); rerolled = !!st.rerolled; rerollN = st.rerollN | 0; pageStore(false); } else pageRunMap();
+  };
+}
 var QUIPS = ["Everything must go. Mostly the customers.", "Prices include tax, gravity and a modest curse.", "No refunds. No questions. Some answers.", "Buy two, get the feeling you bought two.",
   "Fresh from the cargo bay, barely scorched.", "I accept credits, compliments and small moons.", "This one fell off a freighter. Legally.", "Corporate says I have to smile. :|"];
 var SHOPKEEP = { tint: 6, look: { head: 2, eyes: 3, antenna: 2 } };
 function pageStore(fresh) {
-  if (fresh) { offers = storeOffers(RUN, META, CONFIG, makeRng(newSeed())); rerolled = false; rerollN = 0; }
+  if (fresh) { offers = storeOffers(RUN, META, CONFIG, makeRng(newSeed())); rerolled = false; rerollN = 0; RUN.levelSeed = newSeed(); saveRun(); }
   var items = storeItems(CONFIG), q = QUIPS[(Math.random() * QUIPS.length) | 0];
   var h = '<div class="keeper"><div class="ksvg">' + alienSVG(SHOPKEEP, "k") + '</div><div class="ksay"><b>ZORGLE\'S ORBITAL BAZAAR</b>' + q + "</div></div>" +
     '<div class="wal"><div><b>' + RUN.wallet + '</b>CREDITS</div><div><b>' + RUN.points + '</b>RUN POINTS</div></div><div class="tower">';
@@ -767,8 +821,8 @@ function pageStore(fresh) {
     var it = items.filter(function (x) { return x.id === id; })[0], can = itemEligible(RUN, id, CONFIG, META);
     h += '<div class="stall s' + (i % 4) + (can ? "" : " sold") + '"><div class="awn"></div><div class="sbody"><div class="sicon">' + storeIcon(id) + '</div><div class="it"><b>' + it.name + "</b><small>" + it.desc + '</small></div><button data-buy="' + i + '"' + (!can || RUN.wallet < it.price ? " disabled" : "") + ">" + (can ? it.price + " MC" : "SOLD") + "</button></div></div>";
   });
-  h += '</div><div class="rbtns">' + (META.hq.reroll && !rerolled ? '<button id="pgRe" class="small">FREE REROLL</button>' : "") + '<button id="pgRr" class="small"' + (canReroll(RUN, offers, rerollN, CONFIG, META) ? "" : " disabled") + ">REROLL - " + rerollCost(rerollN, CONFIG) + ' MC</button><button id="pgGo" class="pri">CONTINUE</button></div><div class="note">' + ownedText(RUN) + "</div>";
-  page("STORE", h, false);
+  h += '</div><div class="rbtns">' + (META.hq.reroll && !rerolled ? '<button id="pgRe" class="small">FREE REROLL</button>' : "") + '<button id="pgRr" class="small"' + (canReroll(RUN, offers, rerollN, CONFIG, META) ? "" : " disabled") + ">REROLL - " + rerollCost(rerollN, CONFIG) + ' MC</button><button id="pgGo" class="pri">CONTINUE</button></div>' + seedRow() + '<div class="note">' + ownedText(RUN) + "</div>";
+  page("STORE", h, false); bindSeedBtn("store");
   $("pageTitle").innerHTML = '<span class="ticon">' + storeIcon("shop") + "</span>STORE";
   Array.prototype.forEach.call(document.querySelectorAll("[data-buy]"), function (b) {
     b.onclick = function () { if (buyItem(RUN, offers[+b.getAttribute("data-buy")], CONFIG, META)) { AudioSys.sfx("coin"); saveRun(); pageStore(false); } else AudioSys.sfx("bonk"); };
@@ -786,6 +840,8 @@ function pageRunEnd() {
   var h = '<div class="big2">' + (won ? "ALL FOUR GALAXIES SERVED" : "RUN OVER") + '</div><div class="wal" style="margin-top:14px"><div><b>' + (RUN ? RUN.points : 0) + '</b>RUN POINTS</div><div><b>+' + stockEarned + '</b>STOCK EARNED</div><div><b>' + META.stock + "</b>STOCK</div></div>" +
     '<div class="note">' + (won ? "The board is pleased. Briefly." : "Reached galaxy " + (li.g + 1) + ", " + (li.boss ? "boss" : "level " + (li.l + 1)) + ".") + "<br>best run: " + META.best + " points &middot; runs: " + META.runs + "<br>Stock = run points / " + CONFIG.stockPerPoints + ", spent at HQ on permanent unlocks.</div>" +
     '<div class="rbtns"><button id="pgHQ" class="pri">GO TO HQ</button><button id="pgNew">NEW RUN</button></div>';
+  if (RUN && RUN.replay) h = '<div class="note"><b>REPLAY RUN</b> &middot; nothing from this run was saved (no stock, no high score).</div>' + h;
+  if (replayActive) exitReplay();
   RUN = null;
   page(won ? "VICTORY" : "RUN END", h);
   if (won) AudioSys.sfx("fanfare");
@@ -838,6 +894,7 @@ function pageArcade() {
 }
 function startStory(fresh) {
   mode = "story";
+  if (RUN && RUN.replay && !replayActive) applyReplay(RUN);
   if (RUN && !fresh) {
     var li = levelInfo(RUN.level);
     page("STORY", '<div class="note">A run is in progress: galaxy ' + (li.g + 1) + ", " + (li.boss ? "boss" : "level " + (li.l + 1)) + " &middot; " + RUN.points + " points &middot; " + RUN.wallet + ' credits.</div><div class="rbtns"><button id="pgGo" class="pri">RESUME</button><button id="pgAb">ABANDON</button></div>');
@@ -1032,7 +1089,7 @@ function flyOff(pic) { // finished planet is shipped to the client
   f.style.opacity = 0.3;
   setTimeout(function () { f.style.display = "none"; }, 530);
 }
-function toStart() { phase = "idle"; refreshStart(); show("start"); AudioSys.music("title"); }
+function toStart() { if (replayActive) exitReplay(); phase = "idle"; refreshStart(); show("start"); AudioSys.music("title"); }
 function muteLabels() {
   var t = AudioSys.isMuted() ? "SOUND OFF" : "SOUND ON";
   $("muteBtn").textContent = t; if ($("rcMute")) $("rcMute").textContent = t;
@@ -1056,6 +1113,7 @@ function parseSetting(k, str) {
 }
 function openSettings(from) { settingsFrom = from; buildSettings(); show("settings"); }
 
+bind("seedBtn", function () { AudioSys.init(); AudioSys.sfx("tap"); pageSeedLoad(); });
 bind("storyBtn", function () { AudioSys.init(); AudioSys.sfx("tap"); startStory(false); });
 bind("arcadeBtn", function () { AudioSys.init(); AudioSys.sfx("tap"); pageArcade(); });
 bind("hqBtn", function () { AudioSys.init(); AudioSys.sfx("tap"); pageHQ(); });

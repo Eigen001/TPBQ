@@ -1,5 +1,5 @@
 "use strict";
-var VERSION = "v1.7 build 2026-11-25 (loyalty card, intern, sous-chef, bigger well)";
+var VERSION = "v1.8 build 2026-11-25 (run seed codes)";
 
 /* ================= PURE LOGIC (no DOM) - tested by logic.test.mjs ================= */
 // THE one tunable object. Everything here is live-editable in the settings panel.
@@ -781,19 +781,69 @@ function sameShape(a, b) {
   return typeof a === typeof b && (typeof b !== "number" || isFinite(b));
 }
 function loadJSON(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
-function saveJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
+var SAVE_LOCK = false; // while a seed replay is active, the player's own settings and HQ/high scores are never overwritten
+function saveJSON(k, v) { if (SAVE_LOCK && (k === CFG_KEY || k === "tpbq_meta")) return; try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
 var MUSIC_STYLES = ["chip", "wave", "funk"];
 var CFG_KEY = "tpbq_cfg_main3";
 var CONFIG = clone(CONFIG_DEFAULTS);
-(function () {
+function loadSavedConfig(target) { // fill target (a CONFIG-shaped object) from defaults + the player's saved settings
+  Object.keys(CONFIG_DEFAULTS).forEach(function (k) { target[k] = clone(CONFIG_DEFAULTS[k]); });
   var s = loadJSON(CFG_KEY), old = false;
   if (!s) { s = loadJSON("tpbq_cfg_main2"); old = true; } // v1.2 settings: keep them, except the numbers whose defaults changed in v1.3
   var changed = ["roundSeconds", "rushSeconds", "quotasG1", "quotasG2", "quotasG3", "quotasG4"];
   if (s && typeof s === "object") Object.keys(CONFIG_DEFAULTS).forEach(function (k) {
     if (old && changed.indexOf(k) >= 0) return;
-    if (k in s && sameShape(CONFIG_DEFAULTS[k], s[k])) CONFIG[k] = s[k];
+    if (k in s && sameShape(CONFIG_DEFAULTS[k], s[k])) target[k] = s[k];
   });
-})();
+}
+loadSavedConfig(CONFIG);
+/* ----- run seed codes (v1.8). A code is a paste-able snapshot of a story run at the store or the run map: the whole run,
+   the shelf, the seed of the next level, plus the gameplay tweak settings and HQ unlocks of the person who made it. ----- */
+var SEED_PREFIX = "TPBQ1";
+var SEED_CFG_SKIP = ["artStyle", "paletteLayout", "musicStyle", "musicVolume", "sfxVolume", "haptics", "hapticPaintMs", "canvasDiameterPct"]; // personal, not gameplay
+function seedKeyOk(k) { return SEED_CFG_SKIP.indexOf(k) < 0 && k.indexOf("arcade") !== 0; }
+function seedCfgDiff(cfg) { var d = {}; Object.keys(CONFIG_DEFAULTS).forEach(function (k) { if (seedKeyOk(k) && JSON.stringify(cfg[k]) !== JSON.stringify(CONFIG_DEFAULTS[k])) d[k] = cfg[k]; }); return d; }
+function seedApplyCfg(cfg, diff) { // gameplay keys become defaults + diff; the loader's own art/music/haptic choices stay
+  Object.keys(CONFIG_DEFAULTS).forEach(function (k) { if (!seedKeyOk(k)) return; cfg[k] = (diff && k in diff && sameShape(CONFIG_DEFAULTS[k], diff[k])) ? diff[k] : clone(CONFIG_DEFAULTS[k]); });
+}
+function seedHq(hq) { var d = newMeta().hq; if (hq && typeof hq === "object") Object.keys(hq).forEach(function (k) { if (typeof hq[k] === "boolean" || typeof hq[k] === "number") d[k] = hq[k]; }); return d; } // HQ starts empty and fills as unlocks are bought
+var B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+function b64enc(str) { // str must be ASCII
+  var o = "", i, a, b, c;
+  for (i = 0; i < str.length; i += 3) {
+    a = str.charCodeAt(i); b = i + 1 < str.length ? str.charCodeAt(i + 1) : 0; c = i + 2 < str.length ? str.charCodeAt(i + 2) : 0;
+    o += B64[a >> 2] + B64[((a & 3) << 4) | (b >> 4)] + (i + 1 < str.length ? B64[((b & 15) << 2) | (c >> 6)] : "") + (i + 2 < str.length ? B64[c & 63] : "");
+  }
+  return o;
+}
+function b64dec(s) {
+  var o = "", i, v = [], ch;
+  for (i = 0; i < s.length; i++) { ch = B64.indexOf(s[i]); if (ch < 0) return null; v.push(ch); }
+  for (i = 0; i < v.length; i += 4) {
+    o += String.fromCharCode((v[i] << 2) | (v[i + 1] >> 4));
+    if (i + 2 < v.length) o += String.fromCharCode(((v[i + 1] & 15) << 4) | (v[i + 2] >> 2));
+    if (i + 3 < v.length) o += String.fromCharCode(((v[i + 2] & 3) << 6) | v[i + 3]);
+  }
+  return o;
+}
+function seedHash(s) { var h = 2166136261, i; for (i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return ("00000000" + h.toString(16)).slice(-8); }
+function seedPack(run, store, cfg, hq, where, build) {
+  var r = JSON.parse(JSON.stringify(run)); delete r.replay; delete r.cfgOv; delete r.hqOv;
+  var json = JSON.stringify({ b: build, w: where, run: r, st: store || null, cfg: seedCfgDiff(cfg), hq: hq }).replace(/[\u0080-\uffff]/g, function (c) { return "\\u" + ("0000" + c.charCodeAt(0).toString(16)).slice(-4); });
+  var body = b64enc(json);
+  return SEED_PREFIX + "." + body + "." + seedHash(body);
+}
+function seedUnpack(text) { // -> { ok, data } or { ok:false, err }
+  var t = String(text || "").replace(/[\s\u200b-\u200f\u2028\u2029\ufeff]/g, ""), at = t.indexOf(SEED_PREFIX + "."), m;
+  if (at < 0) return { ok: false, err: "That doesn't look like a run seed. It should start with " + SEED_PREFIX + "." };
+  m = /^TPBQ1\.([A-Za-z0-9_-]+)\.([0-9a-f]{8})/.exec(t.slice(at));
+  if (!m) return { ok: false, err: "The seed looks cut off. Copy the whole thing, including the last few characters." };
+  if (seedHash(m[1]) !== m[2]) return { ok: false, err: "The seed doesn't check out. Part of it is missing or changed." };
+  var json = b64dec(m[1]), d;
+  try { d = JSON.parse(json); } catch (e) { return { ok: false, err: "The seed couldn't be read." }; }
+  if (!d || typeof d !== "object" || !d.run || typeof d.run !== "object") return { ok: false, err: "The seed has no run in it." };
+  return { ok: true, data: d };
+}
 function sanitizeConfig() {
   CONFIG.GRID = Math.max(8, Math.min(200, CONFIG.GRID | 0));
   if (MUSIC_STYLES.indexOf(CONFIG.musicStyle) < 0) CONFIG.musicStyle = "chip";
