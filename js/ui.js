@@ -1,6 +1,6 @@
 "use strict";
 /* ================= UI: screens, input, game loop, settings ================= */
-var BUILD = "1.4"; // must match <meta name="tpbq-build"> in index.html
+var BUILD = "1.5"; // must match <meta name="tpbq-build"> in index.html
 document.body.classList.toggle("poster", POSTER()); // art style first, so nothing below can leave the game in the wrong look
 function bind(id, fn) { var el = $(id); if (el) el.onclick = fn; } // a missing button (old index.html) must never stop the game loading
 var META = (function () {

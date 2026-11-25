@@ -1,5 +1,5 @@
 "use strict";
-var VERSION = "v1.4 build 2026-11-25 (one twist per galaxy, 2x4 palette)";
+var VERSION = "v1.5 build 2026-11-25 (recipe list, Hot Spring, Plateau, Summit)";
 
 /* ================= PURE LOGIC (no DOM) - tested by logic.test.mjs ================= */
 // THE one tunable object. Everything here is live-editable in the settings panel.
@@ -81,7 +81,8 @@ var TERRAINS = [
   T(16, "MAGMA", [120, 26, 18], 3),
   T(17, "SWAMP", [104, 136, 72], 2), T(18, "OASIS", [84, 190, 160], 2), T(19, "PRAIRIE", [212, 204, 116], 2),
   T(20, "SAVANNA", [198, 172, 84], 2), T(21, "BEACH", [244, 220, 160], 2), T(22, "ESTUARY", [60, 146, 196], 2),
-  T(23, "MESA", [190, 92, 58], 3), T(24, "SHRUBLAND", [160, 150, 84], 3)
+  T(23, "MESA", [190, 92, 58], 3), T(24, "SHRUBLAND", [160, 150, 84], 3),
+  T(25, "HOT SPRING", [168, 220, 208], 2), T(26, "PLATEAU", [184, 168, 136], 2), T(27, "SUMMIT", [122, 134, 150], 3)
 ];
 var GRADES = ["S", "A", "B", "C", "D", "F"];
 var ANY = -1; // retired; kept so old helpers stay harmless
@@ -89,7 +90,7 @@ var ANY = -1; // retired; kept so old helpers stay harmless
 /* ----- recipes: tier 2/3 terrains are MADE on the planet (bots transform, MIX combines) ----- */
 var BOTS = ["hot", "chill", "low", "high"];
 var BOT_NAMES = { hot: "HOT BOT", chill: "CHILL BOT", low: "LOW BOT", high: "HIGH BOT" };
-var BOT_RECIPES = { hot: { 1: 8, 7: 16 }, chill: { 5: 9, 3: 10, 2: 14 }, low: { 5: 11, 2: 12, 3: 13, 6: 15 }, high: { 6: 7 } };
+var BOT_RECIPES = { hot: { 1: 8, 4: 25, 7: 16 }, chill: { 5: 9, 3: 10, 2: 14 }, low: { 5: 11, 2: 12, 3: 13, 6: 15 }, high: { 6: 7, 5: 26, 7: 27 } };
 var MIXES = [
   { id: "swamp", a: 1, b: 4, out: 17 }, { id: "oasis", a: 2, b: 4, out: 18 }, { id: "prairie", a: 5, b: 6, out: 19 },
   { id: "savanna", a: 5, b: 1, out: 20 }, { id: "beach", a: 2, b: 3, out: 21 }, { id: "estuary", a: 4, b: 3, out: 22 },

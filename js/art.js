@@ -259,8 +259,9 @@ function alienSVG(o, p) {
 
 /* ----- tier 2/3 terrains: poster colour + inked symbol that reads as a variant of the parent ----- */
 PCOL = PCOL.concat(["#8a5442", "#1c6a3a", "#b4ccc0", "#8ec4ea", "#84ba54", "#c8702c", "#16347a", "#e6eef4", "#6a5048", "#6e1810",
-  "#688848", "#f2c86a", "#d4cc74", "#c6ac54", "#f4dca0", "#3c92c4", "#c05c3a", "#a09654"]);
-var PSTEP = { 8: 20, 13: 30, 14: 30, 10: 30 }, PINKC = { 13: "#f4e6c8", 15: "#f4e6c8", 16: "#f2913d" };
+  "#688848", "#f2c86a", "#d4cc74", "#c6ac54", "#f4dca0", "#3c92c4", "#c05c3a", "#a09654",
+  "#a8dcd0", "#b8a888", "#7a8696"]);
+var PSTEP = { 8: 20, 13: 30, 14: 30, 10: 30 }, PINKC = { 13: "#f4e6c8", 15: "#f4e6c8", 16: "#f2913d", 27: "#14262b" };
 (function () { for (var id = 7; id < TERRAINS.length; id++) { var c = TERRAINS[id].color; TCOL[id] = rgb(mix(c, [255, 255, 255], 0.35)); PAINT[id] = posterPaint(id); } })();
 function inkSym2(x, id, r) {
   var k, ink = x.strokeStyle;
@@ -283,6 +284,9 @@ function inkSym2(x, id, r) {
   else if (id === 21) { sub(3, 0, -12, 0.9); x.fillStyle = ink; for (k = 0; k < 4; k++) { x.beginPath(); x.arc(-20 + k * 13 + r() * 4, 10 + r() * 12, 2.2, 0, 7); x.fill(); } }
   else if (id === 22) { sub(3, 0, -10, 0.9); sub(4, 0, 14, 0.9); }
   else if (id === 23) { x.moveTo(-28, 16); x.lineTo(-18, -14); x.lineTo(18, -14); x.lineTo(28, 16); x.stroke(); x.beginPath(); x.lineWidth *= 0.6; for (k = 0; k < 5; k++) { x.moveTo(-14 + k * 7, -14); x.lineTo(-16 + k * 7, 2); } x.stroke(); }
+  else if (id === 25) { x.ellipse(0, 12, 22, 9, 0, 0, 7); x.fillStyle = "#46beba"; x.fill(); x.strokeStyle = "#e8873a"; x.lineWidth *= 1.3; x.stroke(); x.strokeStyle = ink; x.lineWidth /= 1.3; x.beginPath(); for (k = 0; k < 3; k++) { var sx = -10 + k * 10; x.moveTo(sx, 0); x.quadraticCurveTo(sx - 5, -8, sx, -14); x.quadraticCurveTo(sx + 5, -20, sx, -26); } x.stroke(); }
+  else if (id === 26) { x.moveTo(-30, 18); x.lineTo(-22, -8); x.lineTo(22, -8); x.lineTo(30, 18); x.stroke(); x.beginPath(); x.lineWidth *= 0.7; for (k = 0; k < 3; k++) { var gx = -14 + k * 14; x.moveTo(gx - 4, -8); x.lineTo(gx - 2, -14); x.moveTo(gx, -8); x.lineTo(gx, -16); x.moveTo(gx + 4, -8); x.lineTo(gx + 2, -14); } x.stroke(); }
+  else if (id === 27) { x.moveTo(-30, 20); x.lineTo(-6, -26); x.lineTo(6, -6); x.lineTo(14, -16); x.lineTo(30, 20); x.stroke(); x.beginPath(); x.moveTo(-6, -26); x.lineTo(-17, -5); x.lineTo(-11, -9); x.lineTo(-6, -3); x.lineTo(-1, -10); x.lineTo(3, -6); x.lineTo(6, -6); x.closePath(); x.moveTo(14, -16); x.lineTo(9, -7); x.lineTo(14, -9); x.lineTo(19, -6); x.closePath(); x.fillStyle = "#fff"; x.fill(); x.stroke(); }
   else if (id === 24) { [[-16, 6, 8], [2, -4, 9], [18, 8, 7]].forEach(function (p) { x.moveTo(p[0] + p[2], p[1]); x.arc(p[0], p[1], p[2], 0, Math.PI, true); x.moveTo(p[0], p[1]); x.lineTo(p[0], p[1] + 8); }); x.stroke(); }
 }
 /* ----- textures are built lazily; tier 2/3 at half resolution to stay light on iPhone memory ----- */
