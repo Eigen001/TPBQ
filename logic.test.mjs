@@ -62,27 +62,27 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
 // ---------- 3. quota (4 galaxies x 4 levels) ----------
 {
   const meta = ctx.newMeta();
-  let run = ctx.newRun(meta, cfg, rng(1)); run.level = 3; // G1 boss quota 16
-  let res = ctx.finishLevel(run, { points: 15, total: 20 }, cfg);
-  ok("3a 15 vs quota 16 -> run over", res.quota === 16 && !res.passed && run.over && !run.won && run.level === 3, [res, run.level]);
-  run = ctx.newRun(meta, cfg, rng(1)); run.level = 2; // quota 14
+  let run = ctx.newRun(meta, cfg, rng(1)); run.level = 3; // G1 boss quota 11
+  let res = ctx.finishLevel(run, { points: 10, total: 20 }, cfg);
+  ok("3a 10 vs quota 11 -> run over", res.quota === 11 && !res.passed && run.over && !run.won && run.level === 3, [res, run.level]);
+  run = ctx.newRun(meta, cfg, rng(1)); run.level = 2; // quota 9
   res = ctx.finishLevel(run, { points: 15, total: 20 }, cfg);
-  ok("3b 15 vs quota 14 -> continue", res.quota === 14 && res.passed && !run.over && run.level === 3 && run.wallet === 20 && run.points === 15);
+  ok("3b 15 vs quota 9 -> continue", res.quota === 9 && res.passed && !run.over && run.level === 3 && run.wallet === 20 && run.points === 15);
   run = ctx.newRun(meta, cfg, rng(1)); run.level = 15;
-  res = ctx.finishLevel(run, { points: 38, total: 1 }, cfg);
+  res = ctx.finishLevel(run, { points: 25, total: 1 }, cfg);
   ok("3c beating the galaxy-4 boss wins the run", res.passed && run.over && run.won && ctx.LEVELS === 16);
-  ok("3d quota table", [0, 3, 4, 7, 8, 11, 12, 15].map((l) => ctx.quotaFor(l, cfg)).join() === "10,16,16,24,22,30,28,38");
+  ok("3d quota table (60 s)", [0, 3, 4, 7, 8, 11, 12, 15].map((l) => ctx.quotaFor(l, cfg)).join() === "7,11,11,16,15,20,19,25" && cfg.roundSeconds === 60 && cfg.rushSeconds === 40);
   run = ctx.newRun(meta, cfg, rng(1)); ctx.finishLevel(run, { points: 99, total: -5 }, cfg);
   ok("3e wallet never negative", run.wallet === 0);
-  run = ctx.newRun(meta, cfg, rng(1)); run.level = 3; res = ctx.finishLevel(run, { points: 16, total: 0 }, cfg);
+  run = ctx.newRun(meta, cfg, rng(1)); run.level = 3; res = ctx.finishLevel(run, { points: 11, total: 0 }, cfg);
   ok("3f passing a boss flags the next galaxy", res.newGalaxy && run.level === 4);
   // quota shield
   run = ctx.newRun(meta, cfg, rng(1)); run.items.shield = 1; run.level = 3;
-  res = ctx.finishLevel(run, { points: 13, total: 0 }, cfg);
+  res = ctx.finishLevel(run, { points: 8, total: 0 }, cfg);
   ok("3g shield saves a miss by 3", res.passed && res.shielded && run.items.shield === 2);
-  run.level = 7; res = ctx.finishLevel(run, { points: 23, total: 0 }, cfg);
+  run.level = 7; res = ctx.finishLevel(run, { points: 15, total: 0 }, cfg);
   ok("3h shield works once per run", !res.passed && run.over);
-  run = ctx.newRun(meta, cfg, rng(1)); run.items.shield = 1; run.level = 3; res = ctx.finishLevel(run, { points: 12, total: 0 }, cfg);
+  run = ctx.newRun(meta, cfg, rng(1)); run.items.shield = 1; run.level = 3; res = ctx.finishLevel(run, { points: 7, total: 0 }, cfg);
   ok("3i shield does not cover a miss by 4", !res.passed && run.items.shield === 1);
 }
 // ---------- 4. stock ----------
@@ -155,7 +155,7 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
         shapes.add(o.shape); sizes = [Math.min(sizes[0], o.size), Math.max(sizes[1], o.size)];
       }
       ok(`7 galaxy ${g + 1} ${ownAll ? "all owned" : "as dealt"}: 1000 orders valid`, bad.length === 0, [...new Set(bad)]);
-      if (g === 0 && !ownAll) ok("7 galaxy 1 is base terrains, circles, full size", t2seen === 0 && shapes.size === 1 && shapes.has("circle") && sizes[0] === 1, [t2seen, [...shapes], sizes]);
+      if (g === 0 && !ownAll) ok("7 galaxy 1 is base terrains, circles, sizes 65-100%", t2seen === 0 && shapes.size === 1 && shapes.has("circle") && sizes[0] < 0.7 && sizes[0] >= 0.65 && sizes[1] === 1, [t2seen, [...shapes], sizes]);
       if (ownAll) ok(`7 galaxy ${g + 1}: tier-2 slots appear`, t2seen > 100, t2seen);
       const want = new Set(ctx.storyShapes(ctx.runComps(run, g)));
       ok(`7 galaxy ${g + 1}: shapes come only from drawn sets`, [...shapes].every((x) => want.has(x)), [...shapes]);
@@ -235,30 +235,31 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
         if (id.indexOf(":") >= 0) bad.push("bots/recipes sold");
         if (id === "brush" && run.items.brush >= 3) bad.push("brush stack");
         if (id === "time" && run.items.time >= 3) bad.push("time stack");
-        if (["peek", "auto", "steady", "well2", "calm", "skips", "boost", "shield"].includes(id) && run.items[id]) bad.push("owned once");
+        if (id === "well2") bad.push("well2 sold");
+        if (!["brush", "time"].includes(id) && run.items[id]) bad.push("owned once");
       });
       const w = run.wallet; if (offers.length && ctx.buyItem(run, offers[0], cfg, meta) && run.wallet >= w) bad.push("no charge");
       run.wallet += 40;
     }
   }
   ok("10a 300 runs x 8 visits: offers always eligible", bad.length === 0, [...new Set(bad)]);
-  ok("10a2 store has the 10 items", ctx.storeItems(cfg).length === 10);
+  ok("10a2 store has 16 items, no second well", ctx.storeItems(cfg).length === 16 && !ctx.storeItems(cfg).some((x) => x.id === "well2"));
   const run = ctx.newRun(meta, cfg, rng(1)); run.wallet = 1000;
   let n = 0; while (ctx.buyItem(run, "brush", cfg)) n++;
   let t = 0; while (ctx.buyItem(run, "time", cfg)) t++;
   ok("10b stack limits 3 / 3", n === 3 && t === 3 && run.items.brush === 3 && run.items.time === 3);
-  ok("10c one-time items", ctx.buyItem(run, "peek", cfg) && !ctx.buyItem(run, "peek", cfg) && ctx.buyItem(run, "well2", cfg) && !ctx.buyItem(run, "well2", cfg));
+  ok("10c one-time items", ctx.buyItem(run, "peek", cfg) && !ctx.buyItem(run, "peek", cfg) && ctx.buyItem(run, "undo", cfg) && !ctx.buyItem(run, "undo", cfg));
   ok("10d used shield cannot be rebought", (run.items.shield = 2, !ctx.buyItem(run, "shield", cfg)));
   const poor = ctx.newRun(meta, cfg, rng(1)); poor.wallet = 24;
-  ok("10e cannot overspend", !ctx.buyItem(poor, "well2", cfg) && poor.wallet === 24 && ctx.buyItem(poor, "steady", cfg) && poor.wallet === 9);
+  ok("10e cannot overspend", !ctx.buyItem(poor, "shield", cfg) && poor.wallet === 24 && ctx.buyItem(poor, "steady", cfg) && poor.wallet === 9);
   run.items.skips = true; run.items.boost = true;
   const spec = ctx.levelSpec(run, meta, cfg);
-  ok("10f items reach the level", Math.abs(spec.brushMul - Math.pow(1.15, 3)) < 1e-9 && spec.seconds === 120 && spec.peek === true && spec.wells === 2 && spec.freeSkips === 2 && spec.multBoost);
+  ok("10f items reach the level", Math.abs(spec.brushMul - Math.pow(1.15, 3)) < 1e-9 && spec.seconds === 90 && spec.peek === true && spec.wells === 1 && spec.freeSkips === 2 && spec.multBoost);
   const m4 = ctx.newMeta(); m4.hq.slots4 = true; const r4 = ctx.newRun(m4, cfg, rng(2));
   ok("10g HQ 4 slots", ctx.storeOffers(r4, m4, cfg, rng(3)).length === 4);
   const hq = ctx.newMeta(); hq.stock = 11;
-  ok("10h HQ: 2 wells", ctx.buyHQ(hq, "well2", cfg) && hq.stock === 1 && !ctx.buyHQ(hq, "well2", cfg) && ctx.levelSpec(ctx.newRun(hq, cfg, rng(1)), hq, cfg).wells === 2 && ctx.arcadeSpec(cfg, true, hq).wells === 2);
-  ok("10i HQ well removes the store well", !ctx.itemEligible(ctx.newRun(hq, cfg, rng(1)), "well2", cfg, hq) && !ctx.hqItems(cfg).some((x) => x.id.indexOf("startBot") === 0));
+  ok("10h HQ purchase", ctx.buyHQ(hq, "slots4", cfg) && hq.stock === 1 && !ctx.buyHQ(hq, "slots4", cfg));
+  ok("10i no second well anywhere: always 1 well", !ctx.hqItems(cfg).some((x) => x.id === "well2" || x.id.indexOf("startBot") === 0) && ctx.arcadeSpec(cfg, true, hq).wells === 1);
   // calm token
   const rc = ctx.newRun(meta, cfg, rng(4)); rc.level = 15; rc.items.calm = true;
   ok("10j calm token: G4 boss 2 -> 1 modifier", ctx.levelMods(rc, 15).length === 1);
@@ -298,7 +299,7 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
   const meta = ctx.newMeta(), run = ctx.newRun(meta, cfg, rng(3));
   ok("11h bosses: 1, 1, 1, 2 distinct modifiers", run.bossMods.length === 4 && run.bossMods.slice(0, 3).every((m) => m.length === 1) && run.bossMods[3].length === 2 && run.bossMods[3][0] !== run.bossMods[3][1]);
   run.level = 3; run.bossMods[0] = ["rush"];
-  ok("11i rush = 60 s, only on the boss", ctx.levelSpec(run, meta, cfg).seconds === 60 && (run.level = 2, ctx.levelSpec(run, meta, cfg).seconds === 90 && ctx.levelSpec(run, meta, cfg).mods.length === 0));
+  ok("11i rush = 40 s, only on the boss", ctx.levelSpec(run, meta, cfg).seconds === 40 && (run.level = 2, ctx.levelSpec(run, meta, cfg).seconds === 60 && ctx.levelSpec(run, meta, cfg).mods.length === 0));
   run.level = 3; run.bossMods[0] = ["six"];
   ok("11k six-terrain boss sets the spec", ctx.levelSpec(run, meta, cfg).six === true);
   const off = { ...cfg }; ctx.MODS.forEach((m) => (off[ctx.modKey(m)] = false)); off.modFog = true;
@@ -350,11 +351,12 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
     if (bots !== wantBots) bad.push("bots only from draws");
   }
   ok("13h 400 runs: G1 fixed, each later galaxy adds its complication + 1 makeable mix", bad.length === 0, [...new Set(bad)]);
-  const run = ctx.newRun(meta, cfg, rng(7)); run.comps = ["size", "shapes:suits", "bot:low"]; run.level = 12; ctx.catchUpGalaxies(run, cfg, rng(1));
+  const run = ctx.newRun(meta, cfg, rng(7)); run.comps = ["shapes:basic", "shapes:suits", "bot:low"]; run.level = 12; ctx.catchUpGalaxies(run, cfg, rng(1));
   const sp = ctx.levelSpec(run, meta, cfg);
-  ok("13i complications stack (G4 has size + suits + low bot)", sp.sizeMin === 65 && sp.shapes.includes("heart") && sp.shapes.includes("circle") && run.owned.bots.low && sp.n === 5 && run.galaxies.length === 4);
+  ok("13i complications stack (G4 has basic + suits + low bot; sizes always vary)", sp.sizeMin === 65 && sp.shapes.includes("heart") && sp.shapes.includes("circle") && run.owned.bots.low && sp.n === 5 && run.galaxies.length === 4);
   run.level = 4; const sp2 = ctx.levelSpec(run, meta, cfg);
-  ok("13j G2 only has the first complication; terrain count 4", sp2.sizeMin === 65 && !sp2.shapes.includes("heart") && sp2.n === 4);
+  ok("13j G2 only has the first complication; terrain count 4", sp2.sizeMin === 65 && sp2.shapes.includes("donut") && !sp2.shapes.includes("heart") && sp2.n === 4);
+  ok("13j2 size is no longer a galaxy complication", !ctx.COMPLICATIONS.includes("size") && ctx.COMPLICATIONS.length === 7);
   ok("13k terrain counts 3/4/5/5", cfg.galaxyTerrains.join() === "3,4,5,5");
   // auto-finish never gives leftovers to unordered terrains
   const g = ctx.makeGrid(20, "square"), ord = { basePay: 5, slots: [{ terrain: 1, pct: 50 }, { terrain: 2, pct: 50 }] };
@@ -363,6 +365,64 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
   ok("13l auto-finish: leftovers never go to unordered terrain, best score", c[6] === 10 && c[0] === 0 && ctx.scorePlanet(ord, c, g.total, cfg).S === 2, [c[1], c[2], c[6]]);
   const pr = ctx.createPaintRound(cfg, ctx.practiceSpec(), rng(2)); const tl = pr.timeLeft; ctx.roundTick(pr, 30);
   ok("13m practice is untimed", pr.timeLeft === tl && !pr.over);
+}
+// ---------- 14. v1.3: brush shapes, dials, bucket, undo, freeze, cushion, tip, names ----------
+{
+  const count = (shape) => { const r = ctx.createPaintRound(cfg, { ...baseSpec, brushShape: shape }, rng(1)); return ctx.paintSpray(r, 37.5, 37.5, 8, 1).length; };
+  const c = count("circle"), q = count("square"), t = count("triangle");
+  ok("14a same width: square > circle > triangle, all > 0", q > c && c > t && t > 0, [q, c, t]);
+  const r = ctx.createPaintRound(cfg, { ...baseSpec, brushShape: "triangle" }, rng(1)); ctx.paintSpray(r, 37.5, 37.5, 8, 1);
+  const G = r.grid.G, top = r.grid.cells[Math.floor(37.5 - 7.5) * G + 37], bottomLeft = r.grid.cells[45 * G + 30], topLeft = r.grid.cells[30 * G + 30];
+  ok("14b triangle points up (apex painted, top corners not)", top === 1 && bottomLeft === 1 && topLeft === 0);
+  const rs = ctx.createPaintRound(cfg, { ...baseSpec, brushPct: 10 }, rng(1)), rb = ctx.createPaintRound(cfg, { ...baseSpec, brushPct: 30 }, rng(1));
+  ok("14c dial sets base brush %, multipliers still apply", Math.abs(ctx.brushRad(rb) / ctx.brushRad(rs) - 3) < 1e-9 && Math.abs(ctx.brushRad(ctx.createPaintRound(cfg, { ...baseSpec, brushPct: 10, brushMul: 1.15 }, rng(1))) / ctx.brushRad(rs) - 1.15) < 1e-9);
+  ok("14d clampDial 10..30", ctx.clampDial(4, cfg) === 10 && ctx.clampDial(40, cfg) === 30 && ctx.clampDial(22, cfg) === 22);
+  const meta = ctx.newMeta(), run = ctx.newRun(meta, cfg, rng(2)); run.brushPct = 14; run.brushShape = "square";
+  let sp = ctx.levelSpec(run, meta, cfg);
+  ok("14e without dials: default brush, circle", sp.brushPct === cfg.brushRadiusPct && sp.brushShape === "circle");
+  run.items.dialSize = true; run.items.dialShape = true; sp = ctx.levelSpec(run, meta, cfg);
+  ok("14f with dials: the run's settings carry into the level", sp.brushPct === 14 && sp.brushShape === "square" && sp.dialSize && sp.dialShape);
+  ok("14g arcade dial toggles", ctx.arcadeSpec({ ...cfg, arcadeDialSize: true }, true).dialSize && !ctx.arcadeSpec(cfg, true).dialShape);
+  // bucket
+  const rb2 = ctx.createPaintRound(cfg, { ...baseSpec, bucket: true }, rng(3)), g = rb2.grid, Gb = g.G, mid = Math.floor(Gb / 2);
+  for (let x = 0; x < Gb; x++) { const i = mid * Gb + x; if (g.inside[i]) { g.cells[i] = 2; rb2.blank--; } } // a desert line splits the planet
+  const top0 = ctx.countGrid(g)[0];
+  const ch = ctx.bucketFill(rb2, (mid - 5) * Gb + mid, 3);
+  const cnt = ctx.countGrid(g);
+  ok("14h bucket floods only the connected blank half", ch.length > 0 && cnt[3] === ch.length && cnt[0] === top0 - ch.length && cnt[2] > 0 && rb2.blank === cnt[0] && cnt[0] > 0, [ch.length, cnt[0], cnt[3]]);
+  ok("14i bucket once per planet", ctx.bucketFill(rb2, (mid + 5) * Gb + mid, 4).length === 0);
+  ctx.roundSkip(rb2); ok("14j bucket recharges on a new planet", !rb2.bucketUsed);
+  const rb3 = ctx.createPaintRound(cfg, baseSpec, rng(3)); ctx.paintSpray(rb3, 37, 37, 10, 1);
+  const n1 = ctx.bucketFill(rb3, 37 * rb3.grid.G + 37, 5).length;
+  ok("14k bucket on paint: the same-terrain patch becomes the brush terrain", n1 > 0 && ctx.countGrid(rb3.grid)[1] === 0 && ctx.countGrid(rb3.grid)[5] === n1);
+  // undo
+  const ru = ctx.createPaintRound(cfg, { ...baseSpec, undo: true }, rng(4)); ctx.paintSpray(ru, 20, 20, 6, 1);
+  const before = ctx.countGrid(ru.grid), snap = ctx.snapGrid(ru); ctx.paintSpray(ru, 50, 50, 6, 2);
+  ok("14l undo restores the last stroke", ctx.roundUndo(ru, snap) && ctx.countGrid(ru.grid).join() === before.join() && ru.blank === before[0] && ru.undoLeft === 2);
+  const s2 = ctx.snapGrid(ru); ctx.roundSkip(ru);
+  ok("14m undo cannot reach into a previous planet", !ctx.roundUndo(ru, s2) && ru.undoLeft === 2);
+  const r0 = ctx.createPaintRound(cfg, baseSpec, rng(4)); ok("14n no undo without the item", !ctx.roundUndo(r0, ctx.snapGrid(r0)));
+  // freeze
+  const rf = ctx.createPaintRound(cfg, { ...baseSpec, freeze: true }, rng(5)); const t0 = rf.timeLeft;
+  ok("14o freeze once per level", ctx.roundFreeze(rf) && !ctx.roundFreeze(rf));
+  for (let k = 0; k < 50; k++) ctx.roundTick(rf, 0.1);
+  ok("14p clock stopped for 6 s, then runs", Math.abs(rf.timeLeft - t0) < 1e-9 && rf.frozen > 0 && (ctx.roundTick(rf, 2), Math.abs(rf.timeLeft - (t0 - 1)) < 1e-6) && rf.events.includes("thaw"), [rf.timeLeft, rf.frozen]);
+  // cushion + tip
+  const rc = ctx.createPaintRound(cfg, { ...baseSpec, cushion: true, tip: true }, rng(6));
+  const fs = fillExact(rc, rc.queue[0]); // S, instant -> tip
+  const other = [1, 2, 3, 4, 5, 6].find((x) => !rc.queue[0].slots.some((sl) => sl.terrain === x)); ctx.roundTick(rc, 11); const ff = paintAll(rc, other); // F, slow
+  const sum = ctx.summarizeRound(rc);
+  ok("14q speed tip: +2 for the fast S, none for the slow F", fs.tip === 2 && ff.tip === 0 && sum.tips === 2 && sum.total === sum.payments + sum.bonus + sum.steady + 2);
+  ok("14r grade cushion: worst planet F scores as D (+1 point)", sum.cushion === 1 && sum.points === 10 + 1);
+  const rn = ctx.createPaintRound(cfg, baseSpec, rng(6)); fillExact(rn, rn.queue[0]);
+  ok("14s no cushion / tip without the items", ctx.summarizeRound(rn).cushion === 0 && ctx.summarizeRound(rn).tips === 0);
+  // names
+  const R = rng(9), an = new Set(), pn = new Set(), sn = new Set(); let reg = 0;
+  for (let k = 0; k < 4000; k++) { const a = ctx.alienName(R), p = ctx.planetName(R); an.add(a); pn.add(p); sn.add(ctx.systemName(R)); if (ctx.REAL_PLANETS.includes(p) || ctx.DEADPAN_PLANETS.includes(p)) reg++; }
+  ok("14t names: at least 3x more variety", an.size > 1500 && pn.size > 1500 && sn.size > 500 && ctx.ALIEN_NAMES.length >= 84 && ctx.PLANET_A.length >= 72, [an.size, pn.size, sn.size]);
+  ok("14u about 1 in 4 planet names is regular", reg > 800 && reg < 1200, reg);
+  const old = { level: 1, items: { brush: 0, time: 0, well2: true }, comps: [], galaxies: [] }; ctx.normalizeRun(old, cfg);
+  ok("14v old saves get the new item slots", "undo" in old.items && !("well2" in old.items) && old.brushPct === cfg.brushRadiusPct && old.brushShape === "circle");
 }
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

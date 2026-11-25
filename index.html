@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TPBQ">
-<meta name="tpbq-build" content="1.2.1">
+<meta name="tpbq-build" content="1.3">
 <meta http-equiv="Cache-Control" content="no-cache">
 <title>TPBQ - Tiny Planets Built Quick</title>
 <style>
@@ -309,6 +309,31 @@ body:not(.poster) .sbody{background:var(--panel);color:#e6ecff;border:1.5px soli
 body.poster .sbody button{color:#f4e6c8;background:#e2622b;border-color:#e2622b;flex:none;font-size:14px;padding:8px 10px}
 .sbody .it small{color:inherit}
 .sbody button{white-space:nowrap;flex:none}
+/* ---------- v1.3: quit, tool row, dials ---------- */
+#desk{padding-top:22px}
+#quitBtn{position:absolute;left:0;top:0;z-index:4;padding:3px 9px;font-size:11px;letter-spacing:1px;border-width:2px}
+body.poster #quitBtn{border-width:2px;border-radius:10px;background:#102a30}
+#quitDlg{position:absolute;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:rgba(10,20,24,.72)}
+.qbox{display:flex;flex-direction:column;gap:10px;align-items:stretch;background:#f4e6c8;color:#17383f;border-radius:18px;padding:18px 20px;box-shadow:6px 6px 0 #e2622b;min-width:250px;text-align:center}
+body:not(.poster) .qbox{background:var(--panel);color:#e6ecff;border:2px solid var(--cy)}
+.qbox b{font-size:26px;letter-spacing:2px}.qbox small{font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;margin-top:-6px;opacity:.8}
+body.poster .qbox button{color:#17383f;border-color:#17383f}body.poster .qbox button.pri{color:#f4e6c8;border-color:#e2622b}
+#tools{position:absolute;left:50%;top:20px;transform:translateX(-50%);display:flex;gap:6px;z-index:3}
+#tools button{position:static;transform:none;display:none;padding:3px 10px;font-size:11px;letter-spacing:1px;white-space:nowrap}
+#tools button.own{display:block}
+#tools button.on{color:#17383f;background:#f2b33d;border-color:#f2b33d}
+body.poster #tools button{background:#102a30;border-width:2px;border-radius:12px}
+body.poster #tools button.on{background:#f2b33d;color:#17383f}
+#dials,#shapes{position:absolute;top:50%;transform:translateY(-50%);display:none;flex-direction:column;align-items:center;gap:6px;z-index:3}
+#dials{right:6px}#shapes{right:44px}#shapes.solo{right:6px}
+#dials.own,#shapes.own{display:flex}
+#dials button,#shapes button{width:32px;height:32px;padding:0;font-size:13px;letter-spacing:0;display:flex;align-items:center;justify-content:center}
+body.poster #dials button,body.poster #shapes button{background:#102a30;border-width:2px;border-radius:10px}
+#dialPct{font-size:11px;letter-spacing:0}
+#shapes button.sel{background:#f2b33d!important;border-color:#f2b33d}
+#shapes i{display:block;background:currentColor}
+#shapes button.sel i{background:#17383f}
+.shc{width:14px;height:14px;border-radius:50%}.shs{width:13px;height:13px}.sht{width:16px;height:14px;clip-path:polygon(50% 0,100% 100%,0 100%)}
 </style>
 </head>
 <body class="poster">
@@ -335,6 +360,7 @@ body.poster .sbody button{color:#f4e6c8;background:#e2622b;border-color:#e2622b;
 <div id="game" class="screen">
   <div id="top">
     <div id="desk">
+      <button id="quitBtn" class="small">&#10005; QUIT</button>
       <div id="aliens">
         <div class="alien next"><div class="thought" id="payNext"></div><div id="svgNext"></div></div>
         <div class="alien act"><div class="thought" id="payActive"></div><div id="svgActive"></div></div>
@@ -350,11 +376,14 @@ body.poster .sbody button{color:#f4e6c8;background:#e2622b;border-color:#e2622b;
     <div id="brush"><span>BRUSH</span><canvas id="brushCan"></canvas><div id="brushBot"></div><b id="brushName"></b></div>
     <button class="bot" id="bot_hot"></button><button class="bot" id="bot_chill"></button>
     <button class="bot" id="bot_low"></button><button class="bot" id="bot_high"></button>
-    <button id="peekBtn">PEEK</button>
+    <div id="tools"><button id="peekBtn">PEEK</button><button id="undoBtn">UNDO</button><button id="freezeBtn">FREEZE</button><button id="bucketBtn">BUCKET</button></div>
+    <div id="dials"><button id="dUp" aria-label="bigger brush">&#9650;</button><span id="dialPct">22%</span><button id="dDn" aria-label="smaller brush">&#9660;</button></div>
+    <div id="shapes"><button id="sh_circle" aria-label="circle brush"><i class="shc"></i></button><button id="sh_square" aria-label="square brush"><i class="shs"></i></button><button id="sh_triangle" aria-label="triangle brush"><i class="sht"></i></button></div>
     <canvas id="fly"></canvas>
     <div id="flash"></div>
     <div id="cd"></div>
     <div id="banner"></div>
+    <div id="quitDlg"></div>
     <div id="debug"></div>
   </div>
   <div id="bottom">
@@ -388,9 +417,9 @@ body.poster .sbody button{color:#f4e6c8;background:#e2622b;border-color:#e2622b;
 
 <canvas id="ghost"></canvas>
 
-<script src="js/logic.js?v=1.2.1"></script>
-<script src="js/audio.js?v=1.2.1"></script>
-<script src="js/art.js?v=1.2.1"></script>
-<script src="js/ui.js?v=1.2.1"></script>
+<script src="js/logic.js?v=1.3"></script>
+<script src="js/audio.js?v=1.3"></script>
+<script src="js/art.js?v=1.3"></script>
+<script src="js/ui.js?v=1.3"></script>
 </body>
 </html>
