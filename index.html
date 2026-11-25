@@ -7,6 +7,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TPBQ">
+<meta name="tpbq-build" content="1.2.1">
+<meta http-equiv="Cache-Control" content="no-cache">
 <title>TPBQ - Tiny Planets Built Quick</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -309,7 +311,7 @@ body.poster .sbody button{color:#f4e6c8;background:#e2622b;border-color:#e2622b;
 .sbody button{white-space:nowrap;flex:none}
 </style>
 </head>
-<body>
+<body class="poster">
 <canvas id="bg"></canvas>
 
 <!-- START -->
@@ -379,16 +381,16 @@ body.poster .sbody button{color:#f4e6c8;background:#e2622b;border-color:#e2622b;
 <div id="settings" class="screen">
   <div class="hdr"><h2>&#9881; SETTINGS</h2><button id="setClose" class="small">DONE</button></div>
   <div class="body scroll"><div id="setRows"></div>
-    <div class="rbtns"><button id="setReset" class="small">RESET SETTINGS TO DEFAULTS</button></div>
+    <div class="rbtns"><button id="hapTest" class="small">TEST HAPTICS</button><button id="setReset" class="small">RESET SETTINGS TO DEFAULTS</button></div>
     <div id="devTools"></div>
   </div>
 </div>
 
 <canvas id="ghost"></canvas>
 
-<script src="js/logic.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/art.js"></script>
-<script src="js/ui.js"></script>
+<script src="js/logic.js?v=1.2.1"></script>
+<script src="js/audio.js?v=1.2.1"></script>
+<script src="js/art.js?v=1.2.1"></script>
+<script src="js/ui.js?v=1.2.1"></script>
 </body>
 </html>
