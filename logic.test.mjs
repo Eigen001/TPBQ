@@ -111,7 +111,7 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
   ok("5g HighBot + HotBot -> Mountains and Magma makeable", ctx.makeable(MT, o2) && ctx.makeable(MG, o2));
   const r2 = ctx.createPaintRound(cfg, baseSpec, rng(2)); r2.grid.cells[row + mid] = F; r2.blank--;
   ok("5h a bot you do not own does nothing", ctx.paintSpray(r2, mid, mid + 0.5, 6, 0, { bot: "hot" }).length === 0);
-  ok("5i 18 new terrains, every one has exactly one recipe", ctx.TERRAINS.length === 25 && ctx.TERRAINS.slice(7).every((t) => ctx.recipeFor(t.id)) && ctx.makeableList(ctx.allOwned()).length === 18);
+  ok("5i 21 new terrains, every one has exactly one recipe", ctx.TERRAINS.length === 28 && ctx.TERRAINS.slice(7).every((t) => ctx.recipeFor(t.id)) && ctx.makeableList(ctx.allOwned()).length === 21);
 }
 // ---------- 6. MIX ----------
 {
@@ -425,6 +425,15 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
   ok("14u about 1 in 4 planet names is regular", reg > 800 && reg < 1200, reg);
   const old = { level: 1, items: { brush: 0, time: 0, well2: true }, comps: [], galaxies: [] }; ctx.normalizeRun(old, cfg);
   ok("14v old saves get the new item slots", "undo" in old.items && !("well2" in old.items) && old.brushPct === cfg.brushRadiusPct && old.brushShape === "circle");
+}
+{
+  const o = ctx.emptyOwned(); o.bots.hot = true; o.bots.high = true;
+  ok("15a hot bot: lake -> hot spring (tier 2)", ctx.botOut("hot", 4, o) === 25 && ctx.TERRAINS[25].tier === 2);
+  ok("15b high bot: plains -> plateau (tier 2)", ctx.botOut("high", 5, o) === 26 && ctx.TERRAINS[26].tier === 2);
+  ok("15c high bot: mountains -> summit (tier 3, counts 2)", ctx.botOut("high", 7, o) === 27 && ctx.tier2Count([{ terrain: 27 }]) === 2);
+  ok("15d bot recipe counts 3/3/4/3", ["hot","chill","low","high"].map((b) => Object.keys(ctx.BOT_RECIPES[b]).length).join() === "3,3,4,3");
+  const lo = ctx.emptyOwned(); lo.bots.high = true;
+  ok("15e summit makeable from high bot alone (hills->mountains->summit)", ctx.makeable(27, lo) && !ctx.makeable(25, lo));
 }
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
