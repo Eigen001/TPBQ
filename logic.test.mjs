@@ -243,7 +243,7 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
     }
   }
   ok("10a 300 runs x 8 visits: offers always eligible", bad.length === 0, [...new Set(bad)]);
-  ok("10a2 store has 16 items, no second well", ctx.storeItems(cfg).length === 16 && !ctx.storeItems(cfg).some((x) => x.id === "well2"));
+  ok("10a2 store has 18 items, no second well", ctx.storeItems(cfg).length === 18 && !ctx.storeItems(cfg).some((x) => x.id === "well2"));
   const run = ctx.newRun(meta, cfg, rng(1)); run.wallet = 1000;
   let n = 0; while (ctx.buyItem(run, "brush", cfg)) n++;
   let t = 0; while (ctx.buyItem(run, "time", cfg)) t++;
@@ -260,11 +260,9 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
   const hq = ctx.newMeta(); hq.stock = 11;
   ok("10h HQ purchase", ctx.buyHQ(hq, "slots4", cfg) && hq.stock === 1 && !ctx.buyHQ(hq, "slots4", cfg));
   ok("10i no second well anywhere: always 1 well", !ctx.hqItems(cfg).some((x) => x.id === "well2" || x.id.indexOf("startBot") === 0) && ctx.arcadeSpec(cfg, true, hq).wells === 1);
-  // calm token
-  const rc = ctx.newRun(meta, cfg, rng(4)); rc.level = 15; rc.items.calm = true;
-  ok("10j calm token: G4 boss 2 -> 1 modifier", ctx.levelMods(rc, 15).length === 1);
-  ctx.finishLevel(rc, { points: 0, total: 0 }, cfg);
-  ok("10k calm token is used up on the boss", rc.items.calm === false);
+  // calm token retired
+  const rc = ctx.newRun(meta, cfg, rng(4)); rc.level = 15; rc.items.calm = true; rc.wallet = 5; ctx.normalizeRun(rc, cfg);
+  ok("10j old calm token: removed and refunded 20", !("calm" in rc.items) && rc.wallet === 25 && ctx.levelMods(rc, 15).length === (rc.bossMods[3] || []).length);
   // free skips
   const rs = ctx.createPaintRound(cfg, { ...baseSpec, freeSkips: 2 }, rng(4)); const t0 = rs.timeLeft;
   ctx.roundSkip(rs); ctx.roundSkip(rs); ctx.roundSkip(rs);
@@ -434,6 +432,48 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
   ok("15d bot recipe counts 3/3/4/3", ["hot","chill","low","high"].map((b) => Object.keys(ctx.BOT_RECIPES[b]).length).join() === "3,3,4,3");
   const lo = ctx.emptyOwned(); lo.bots.high = true;
   ok("15e summit makeable from high bot alone (hills->mountains->summit)", ctx.makeable(27, lo) && !ctx.makeable(25, lo));
+}
+{
+  const cfg = ctx.CONFIG_DEFAULTS ? JSON.parse(JSON.stringify(ctx.CONFIG_DEFAULTS)) : ctx.CONFIG, meta = ctx.newMeta ? ctx.newMeta() : { hq: {} };
+  ok("16a reroll cost ladder 3,5,7,9,11", [0,1,2,3,4].map((n) => ctx.rerollCost(n, cfg)).join() === "3,5,7,9,11");
+  const run = ctx.newRun(meta, cfg, rng(9)); run.wallet = 20;
+  let offers = ctx.storeOffers(run, meta, cfg, rng(1)), cnt = 0, spent = 0, dup = 0;
+  for (let i = 0; i < 3; i++) { const w = run.wallet, no = ctx.buyReroll(run, offers, cnt, cfg, meta, rng(10 + i)); if (!no) break; spent += w - run.wallet; if (no.some((id) => offers.indexOf(id) >= 0)) dup++; offers = no; cnt++; }
+  ok("16b three rerolls cost 3+5+7 = 15 and show all-new items", cnt === 3 && spent === 15 && run.wallet === 5 && dup === 0, { cnt, spent, dup });
+  ok("16c cannot reroll with too few credits (needs 9, has 5) and nothing is charged", ctx.buyReroll(run, offers, 3, cfg, meta, rng(5)) === null && run.wallet === 5);
+  const r2 = ctx.newRun(meta, cfg, rng(9)); r2.wallet = 50; const o2 = ctx.storeOffers(r2, meta, cfg, rng(2));
+  ok("16d offers stay unique and full-size", new Set(ctx.buyReroll(r2, o2, 0, cfg, meta, rng(3))).size === 3);
+  const r3 = ctx.newRun(meta, cfg, rng(9)); r3.wallet = 50; Object.keys(r3.items).forEach((k) => { if (k !== "brush" && k !== "time") r3.items[k] = k === "shield" ? 2 : true; }); r3.items.peek = false; r3.items.undo = false; r3.items.tip = false;
+  ctx.storeItems(cfg).forEach((it) => { if (it.id === "brush" || it.id === "time") r3.items[it.id] = 3; });
+  const o3 = ctx.storeOffers(r3, meta, cfg, rng(4));
+  ok("16e no reroll when nothing else is left to offer", o3.length === 3 && !ctx.canReroll(r3, o3, 0, cfg, meta) && ctx.buyReroll(r3, o3, 0, cfg, meta, rng(1)) === null);
+}
+{
+  const cfg = JSON.parse(JSON.stringify(ctx.CONFIG_DEFAULTS)), meta = ctx.newMeta();
+  const mk = (flags, seed = 3) => { const run = ctx.newRun(meta, cfg, rng(seed)); ctx.enterGalaxy(run, 0, cfg, rng(seed + 1)); Object.assign(run.items, flags); return run; };
+  // purchases
+  const rb = mk({}); rb.wallet = 100;
+  ok("17a buy loyalty/intern/sous once each", ["loyalty", "intern", "sous"].every((id) => ctx.buyItem(rb, id, cfg) && !ctx.buyItem(rb, id, cfg)) && rb.wallet === 100 - 25 - 20 - 25);
+  ok("17b levelSpec carries the flags", (() => { const sp = ctx.levelSpec(rb, meta, cfg); return sp.loyalty && sp.intern && sp.sous; })());
+  // loyalty: 4th shipped planet pays double
+  const rl = mk({ loyalty: true }), sl = ctx.levelSpec(rl, meta, cfg), rd = ctx.createPaintRound(cfg, sl, rng(5)); let ships = [];
+  for (let i = 0; i < 4; i++) { const o = rd.queue[0]; rd.grid.cells.forEach((_, k) => { if (rd.grid.inside[k]) rd.grid.cells[k] = o.slots[0].terrain; }); rd.blank = 0; ships.push(ctx.paintFinishIfDone(rd)); }
+  ok("17c loyalty: only the 4th planet pays extra (= its pay)", ships.slice(0, 3).every((f) => f.loyalty === 0) && ships[3].loyalty === ships[3].paid, ships.map((f) => [f.paid, f.loyalty]));
+  const sm = ctx.summarizeRound(rd);
+  ok("17d summary adds loyalty to total credits", sm.loyalty === ships[3].paid && sm.total === sm.payments + sm.bonus + sm.steady + sm.tips + sm.loyalty);
+  const rn = ctx.createPaintRound(cfg, ctx.levelSpec(mk({}), meta, cfg), rng(5)), rs = ctx.createPaintRound(cfg, ctx.levelSpec(rl, meta, cfg), rng(5));
+  ok("17e no loyalty without the item", (() => { for (let i = 0; i < 4; i++) { rn.grid.cells.forEach((_, k) => { if (rn.grid.inside[k]) rn.grid.cells[k] = rn.queue[0].slots[0].terrain; }); rn.blank = 0; if (ctx.paintFinishIfDone(rn).loyalty) return false; } return true; })());
+  // intern: ~8% pre-painted with the largest-target terrain, on every planet incl. after a skip
+  const ri = ctx.createPaintRound(cfg, ctx.levelSpec(mk({ intern: true }), meta, cfg), rng(6));
+  const check = (r) => { const painted = r.grid.total - r.blank, big = r.queue[0].slots.reduce((a, b) => (b.pct > a.pct ? b : a)); let all = true; r.grid.cells.forEach((c, k) => { if (r.grid.inside[k] && c && c !== big.terrain) all = false; });
+    let blanks = 0; r.grid.cells.forEach((c, k) => { if (r.grid.inside[k] && !c) blanks++; }); return Math.abs(painted - Math.round(r.grid.total * cfg.internPct / 100)) <= 1 && all && blanks === r.blank; };
+  ok("17f intern pre-paints ~8% with the biggest target terrain; blank count consistent", check(ri));
+  ctx.roundSkip(ri);
+  ok("17g intern repaints the next planet too", check(ri));
+  ok("17h no pre-paint without intern", rn.blank === rn.grid.total || rn.results.length > 0);
+  // sous-chef
+  const ow = ctx.emptyOwned(); ow.bots.hot = true;
+  ok("17i sous pick: nothing makeable -> 0; hot bot only -> a tier-2 terrain", ctx.sousPick(ctx.emptyOwned(), rng(1)) === 0 && ctx.TERRAINS[ctx.sousPick(ow, rng(1))].tier === 2 && ctx.makeable(ctx.sousPick(ow, rng(2)), ow));
 }
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
