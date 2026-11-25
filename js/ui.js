@@ -799,6 +799,17 @@ function pageHQ() {
     b.onclick = function () { if (buyHQ(META, b.getAttribute("data-hq"), CONFIG)) { AudioSys.sfx("coin"); saveMeta(); pageHQ(); } else AudioSys.sfx("bonk"); };
   });
 }
+function pageRecipes() { // reference list of every tier-2/3 recipe
+  var h = "";
+  BOTS.forEach(function (b) {
+    var rec = BOT_RECIPES[b];
+    h += '<div class="note"><b>' + BOT_NAMES[b] + "</b></div>" + Object.keys(rec).map(function (k) { return recipeLine(+k, BOT_NAMES[b], rec[k]); }).join("");
+  });
+  h += '<div class="note"><b>MIX (drop both into the well, either order)</b></div>' + MIXES.map(function (m) { return recipeLine(m.a, "+ " + TERRAINS[m.b].name, m.out); }).join("");
+  h += '<div class="rbtns"><button id="pgRecBack" class="pri">BACK</button></div>';
+  page("TERRAIN RECIPES", h);
+  $("pageBack").onclick = $("pgRecBack").onclick = function () { AudioSys.sfx("tap"); pageArcade(); };
+}
 function pageArcade() {
   mode = "arcade";
   function row(label, key, opts, names, locked) {
@@ -812,8 +823,9 @@ function pageArcade() {
     row("Brush size dial", "arcadeDialSize", OPT.arcadeDialSize, ["OFF", "ON"]) + row("Brush shape dial", "arcadeDialShape", OPT.arcadeDialShape, ["OFF", "ON"]) +
     '<div class="wal"><div><b>' + (bst === undefined ? "-" : bst) + '</b>HIGH SCORE (THESE OPTIONS)</div></div>' +
     '<div class="note">' + (CONFIG.arcadeTier2 && un ? "Tier-2 ON: every bot and every recipe works in your well this round." : "One " + CONFIG.roundSeconds + " s round. Score = credits.") + "</div>" +
-    '<div class="rbtns"><button id="pgGo" class="pri">PLAY</button></div>';
+    '<div class="rbtns"><button id="pgGo" class="pri">PLAY</button><button id="pgRec">TERRAIN RECIPE LIST</button></div>';
   page("ARCADE", h);
+  $("pgRec").onclick = function () { AudioSys.sfx("tap"); pageRecipes(); };
   Array.prototype.forEach.call(document.querySelectorAll("[data-k]"), function (b) {
     b.onclick = function () { var k = b.getAttribute("data-k"); CONFIG[k] = OPT[k][+b.getAttribute("data-v")]; saveJSON(CFG_KEY, CONFIG); AudioSys.sfx("tap"); pageArcade(); };
   });
