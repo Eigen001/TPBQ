@@ -1,5 +1,8 @@
 "use strict";
 /* ================= UI: screens, input, game loop, settings ================= */
+var BUILD = "1.2.1"; // must match <meta name="tpbq-build"> in index.html
+document.body.classList.toggle("poster", POSTER()); // art style first, so nothing below can leave the game in the wrong look
+function bind(id, fn) { var el = $(id); if (el) el.onclick = fn; } // a missing button (old index.html) must never stop the game loading
 var META = (function () {
   var d = newMeta(), m = loadJSON("tpbq_meta");
   if (m && typeof m === "object") Object.keys(d).forEach(function (k) { if (typeof m[k] === typeof d[k] && m[k] !== null) d[k] = m[k]; });
@@ -15,6 +18,37 @@ var RUN = (function () { var r = loadJSON("tpbq_run"); return validRun(r) ? r : 
 function saveRun() { if (RUN && !RUN.over) saveJSON("tpbq_run", RUN); else { try { localStorage.removeItem("tpbq_run"); } catch (e) { } } }
 function t2Unlocked() { return !!CONFIG.arcadeTier2Unlocked || !!META.arcadeTier2Unlocked; }
 function newSeed() { return (Date.now() ^ (Math.random() * 1e9)) >>> 0; }
+/* ----- haptics. iOS Safari has no vibration API, but toggling an <input type=checkbox switch> (Safari 17.4+ / iOS 18)
+   plays the system haptic tick, including when its label is clicked from script. Android uses navigator.vibrate.
+   Respects the phone's own System Haptics setting. Best effort: unsupported devices simply do nothing. ----- */
+var Haptic = (function () {
+  var last = 0, canVibrate = typeof navigator !== "undefined" && typeof navigator.vibrate === "function";
+  function iosTick() {
+    try {
+      var lab = document.createElement("label"), inp = document.createElement("input");
+      inp.type = "checkbox"; inp.setAttribute("switch", ""); lab.appendChild(inp);
+      lab.style.cssText = "position:fixed;left:-99px;top:-99px;opacity:0;pointer-events:none";
+      document.body.appendChild(lab); lab.click(); document.body.removeChild(lab);
+    } catch (e) { }
+  }
+  function tick(ms) {
+    if (!CONFIG.haptics) return;
+    var now = performance.now(); if (now - last < 18) return; last = now;
+    if (canVibrate) { try { navigator.vibrate(ms || 12); } catch (e) { } } else iosTick();
+  }
+  function pattern(n, gap) { tick(); for (var i = 1; i < n; i++) setTimeout(function () { last = 0; tick(); }, i * gap); }
+  return {
+    tap: function () { tick(12); },
+    paint: function () { if (performance.now() - last >= CONFIG.hapticPaintMs) tick(8); },
+    confirm: function () { pattern(2, 90); },
+    error: function () { pattern(3, 70); }
+  };
+})();
+// every button, swatch, well and bot ticks on press
+document.addEventListener("pointerdown", function (e) {
+  var t = e.target && e.target.closest && e.target.closest("button, .tile, .bot");
+  if (t && !t.disabled && !t.classList.contains("locked")) Haptic.tap();
+}, true);
 
 var mode = "arcade", spec = null, round = null, phase = "idle", lastT = 0, lastSecShown = -1, cdToken = 0;
 var planetEl = $("planet"), pctx = planetEl.getContext("2d"), ghostEl = $("ghost"), gctx = ghostEl.getContext("2d"), wrapEl = $("planetWrap");
@@ -137,7 +171,7 @@ function buildPalette() {
     s.appendChild(c); s.appendChild(lab); h.appendChild(s);
     s.addEventListener("pointerdown", function (e) {
       e.preventDefault();
-      if (round && round.locked.indexOf(id) >= 0) { AudioSys.sfx("bonk"); return; }
+      if (round && round.locked.indexOf(id) >= 0) { AudioSys.sfx("bonk"); Haptic.error(); return; }
       selectBrush(id, true);
       drag = { id: id, pid: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, on: false };
     });
@@ -150,7 +184,7 @@ function buildPalette() {
     s.appendChild(c); s.appendChild(lab); h.appendChild(s);
     s.addEventListener("pointerdown", function (e) {
       e.preventDefault();
-      if (!wells[w]) { AudioSys.sfx("bonk"); wellHint(); return; }
+      if (!wells[w]) { AudioSys.sfx("bonk"); Haptic.error(); wellHint(); return; }
       selectWell(w);
     });
   })(w);
@@ -172,14 +206,15 @@ function dropInWell(w, id) {
   var before = wells[w], now = wellDrop(before, id, round.owned);
   wells[w] = now; lastWell = w; wellPulse(w);
   AudioSys.sfx(!now ? "erase" : before && now !== id ? "coin" : "drop");
+  if (before && now && now !== id) Haptic.confirm(); else Haptic.tap();
   if (!now && brushWell === w) selectBrush(1, false);
   refreshWells(); refreshBrushUI();
 }
 function pressBot(b) {
   var w = brushWell !== null ? brushWell : lastWell, now = wellBot(wells[w], b, round.owned), el = $("bot_" + b);
   el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse");
-  if (!now) { AudioSys.sfx("bonk"); if (!wells[w]) wellHint(); return; }
-  wells[w] = now; lastWell = w; wellPulse(w); AudioSys.sfx("coin"); refreshWells(); refreshBrushUI();
+  if (!now) { AudioSys.sfx("bonk"); Haptic.error(); if (!wells[w]) wellHint(); return; }
+  wells[w] = now; lastWell = w; wellPulse(w); AudioSys.sfx("coin"); Haptic.confirm(); refreshWells(); refreshBrushUI();
 }
 function wellAt(x, y) {
   for (var w = 0; w < nWells(); w++) { var el = $("well" + w); if (!el) continue; var r = el.getBoundingClientRect(); if (x >= r.left - 12 && x <= r.right + 12 && y >= r.top - 20 && y <= r.bottom + 14) return w; }
@@ -289,7 +324,7 @@ function handleEvents() {
   for (i = 0; i < ev.length; i++) {
     if (ev[i] === "fickle") { updateOrderUI(false); var b = $("bubble"); b.classList.remove("flashy"); void b.offsetWidth; b.classList.add("flashy"); AudioSys.sfx("bonk"); }
     else if (ev[i] === "meteorWarn") AudioSys.sfx("tick");
-    else if (ev[i] === "meteor") { paintCells(null, round.grid.cells); renderPlanet(); AudioSys.sfx("erase"); }
+    else if (ev[i] === "meteor") { paintCells(null, round.grid.cells); renderPlanet(); AudioSys.sfx("erase"); Haptic.error(); }
     else if (ev[i] === "locked") { refreshLocked(); AudioSys.sfx("tap"); }
     else if (ev[i] === "freeSkip") { var fl = $("flash"); setTimeout(function () { fl.innerHTML = "<small>FREE SKIP +" + CONFIG.freeSkipSec + " s</small>"; fl.classList.remove("go"); void fl.offsetWidth; fl.classList.add("go"); }, 50); }
   }
@@ -314,9 +349,10 @@ function toScreen(c, gx, gy) {
     e.preventDefault();
     if (phase !== "play" || paint) return;
     try { mid.setPointerCapture(e.pointerId); } catch (err) { }
-    paint = { id: e.pointerId, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, c: wrapCentre() };
+    paint = { id: e.pointerId, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, c: wrapCentre(), buzz: false };
+    Haptic.paint();
   });
-  mid.addEventListener("pointermove", function (e) { if (paint && e.pointerId === paint.id) { paint.x = e.clientX; paint.y = e.clientY; } });
+  mid.addEventListener("pointermove", function (e) { if (paint && e.pointerId === paint.id) { paint.x = e.clientX; paint.y = e.clientY; if (paint.buzz) { paint.buzz = false; Haptic.paint(); } } });
   function stop(e) {
     if (!paint || e.pointerId !== paint.id) return;
     try { mid.releasePointerCapture(e.pointerId); } catch (err) { }
@@ -344,12 +380,14 @@ function doSpray(now) {
   paint.lx = paint.x; paint.ly = paint.y;
   if (round.mod.fog) { var lp = fogPts[fogPts.length - 1]; if (lp && Math.abs(lp.x - b.x) + Math.abs(lp.y - b.y) < rad * 0.5) lp.t = now; else fogPts.push({ x: b.x, y: b.y, t: now }); }
   if (!changed.length) return;
+  paint.buzz = true;
   if (now - lastHiss > 90) { lastHiss = now; AudioSys.sfx(id === 0 ? "rot" : "spray", 3); }
   paintCells(changed, round.grid.cells);
   var fin = paintFinishIfDone(round);
   if (fin) { // finished: ship it (no grade until the review) and bring in the next customer's planet
     paintCells(null, fin.cells); renderPlanet(); fin.pic = snapshot(); flyOff(fin.pic);
     paint = null;
+    Haptic.confirm();
     if (spec.practice) { shipped(fin); AudioSys.sfx("ship"); round.over = true; round.endReason = "practice"; endRound(); return; }
     newPlanetUI(true);
     shipped(fin); AudioSys.sfx("ship");
@@ -424,7 +462,7 @@ function spinGrade(final, gi, done) { // slot-machine reel for the overall grade
       return;
     }
     el.textContent = final; el.classList.remove("spinning", "roll"); el.classList.add("stop", "g" + gi);
-    AudioSys.music(null); AudioSys.sfx("sting", gi);
+    AudioSys.music(null); AudioSys.sfx("sting", gi); if (gi <= 1) Haptic.confirm(); else if (gi >= 4) Haptic.error(); else Haptic.tap();
     setTimeout(function () { if (my === spinToken && phase === "recap") AudioSys.music("recap"); }, 3200);
     if (done) done();
   })();
@@ -727,6 +765,7 @@ var STYLE_NAMES = { chip: "CHIPTUNE", wave: "SYNTHWAVE", funk: "70s FUNK", poste
 var SETTINGS = [
   ["#", "LOOK AND SOUND"],
   ["artStyle", "Art style", ["poster", "classic"]], ["musicStyle", "Music style", MUSIC_STYLES], ["musicVolume", "Music volume 0-100"], ["sfxVolume", "SFX volume 0-100"],
+  ["haptics", "Haptics (iPhone needs iOS 18+ and System Haptics on)"], ["hapticPaintMs", "  ms between paint ticks (lower = buzzier)"],
   ["#", "ROUND"],
   ["roundSeconds", "Round seconds"], ["GRID", "Planet grid: squares across", [25, 50, 75, 100]], ["GRID", "Planet grid: custom (8-200)"],
   ["canvasDiameterPct", "Max planet size % of screen width"], ["brushRadiusPct", "Brush size % of max planet"],
@@ -902,23 +941,28 @@ function parseSetting(k, str) {
 }
 function openSettings(from) { settingsFrom = from; buildSettings(); show("settings"); }
 
-$("storyBtn").onclick = function () { AudioSys.init(); AudioSys.sfx("tap"); startStory(false); };
-$("arcadeBtn").onclick = function () { AudioSys.init(); AudioSys.sfx("tap"); pageArcade(); };
-$("hqBtn").onclick = function () { AudioSys.init(); AudioSys.sfx("tap"); pageHQ(); };
-$("tutBtn").onclick = function () { AudioSys.init(); AudioSys.sfx("tap"); tutorial(); };
-$("gearBtn").onclick = function () { AudioSys.init(); AudioSys.music("title"); AudioSys.sfx("tap"); openSettings("start"); };
-$("muteBtn").onclick = function () { AudioSys.init(); AudioSys.toggleMute(); AudioSys.music("title"); muteLabels(); };
-$("skip").addEventListener("pointerdown", function (e) { e.preventDefault(); e.stopPropagation(); doSkip(); });
-$("version").textContent = VERSION;
-$("musicBtn").onclick = function () {
+bind("storyBtn", function () { AudioSys.init(); AudioSys.sfx("tap"); startStory(false); });
+bind("arcadeBtn", function () { AudioSys.init(); AudioSys.sfx("tap"); pageArcade(); });
+bind("hqBtn", function () { AudioSys.init(); AudioSys.sfx("tap"); pageHQ(); });
+bind("tutBtn", function () { AudioSys.init(); AudioSys.sfx("tap"); tutorial(); });
+bind("gearBtn", function () { AudioSys.init(); AudioSys.music("title"); AudioSys.sfx("tap"); openSettings("start"); });
+bind("muteBtn", function () { AudioSys.init(); AudioSys.toggleMute(); AudioSys.music("title"); muteLabels(); });
+if ($("skip")) $("skip").addEventListener("pointerdown", function (e) { e.preventDefault(); e.stopPropagation(); doSkip(); });
+(function () { // files-out-of-sync guard: index.html and js/ must come from the same build
+  var m = document.querySelector('meta[name="tpbq-build"]'), ok = m && m.getAttribute("content") === BUILD;
+  $("version").textContent = ok ? VERSION : "FILES OUT OF SYNC: re-upload index.html AND the js/ folder, then reload (" + VERSION + ")";
+  if (!ok) $("version").style.cssText = "color:#ff6a4a;opacity:1;max-width:300px;line-height:1.4";
+})();
+bind("musicBtn", function () {
   AudioSys.init(); var i = MUSIC_STYLES.indexOf(CONFIG.musicStyle); CONFIG.musicStyle = MUSIC_STYLES[(i + 1) % MUSIC_STYLES.length]; saveJSON("tpbq_cfg_main2", CONFIG);
   refreshStart(); AudioSys.music("title"); AudioSys.restyle();
-};
-$("setClose").onclick = function () {
+});
+bind("setClose", function () {
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   AudioSys.sfx("tap"); refreshStart(); show(settingsFrom); layout();
-};
-$("setReset").onclick = function () { CONFIG = clone(CONFIG_DEFAULTS); saveJSON("tpbq_cfg_main2", CONFIG); AudioSys.applyVolumes(); AudioSys.restyle(); applyArt(); buildSettings(); AudioSys.sfx("bonk"); };
+});
+bind("hapTest", function () { Haptic.tap(); setTimeout(function () { Haptic.confirm(); }, 400); });
+bind("setReset", function () { CONFIG = clone(CONFIG_DEFAULTS); saveJSON("tpbq_cfg_main2", CONFIG); AudioSys.applyVolumes(); AudioSys.restyle(); applyArt(); buildSettings(); AudioSys.sfx("bonk"); });
 
 /* ----- global guards ----- */
 document.addEventListener("contextmenu", function (e) { e.preventDefault(); });

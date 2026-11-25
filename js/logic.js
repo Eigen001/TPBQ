@@ -1,5 +1,5 @@
 "use strict";
-var VERSION = "v1.1 build 2026-11-25 (4 galaxies + mixing wells)";
+var VERSION = "v1.2.1 build 2026-11-25 (haptics, poster art fix)";
 
 /* ================= PURE LOGIC (no DOM) - tested by logic.test.mjs ================= */
 // THE one tunable object. Everything here is live-editable in the settings panel.
@@ -23,6 +23,8 @@ var CONFIG_DEFAULTS = {
   debugLivePct: false,
   countdown: true,
   musicVolume: 60,
+  haptics: true,                    // iPhone (iOS 17.4+ Safari) / Android vibration
+  hapticPaintMs: 70,                // min ms between haptic ticks while painting
   sfxVolume: 80,
   // ----- story -----
   pointsByGrade: [10, 7, 5, 3, 1, 0],
@@ -661,6 +663,7 @@ function sanitizeConfig() {
   CONFIG.canvasDiameterPct = Math.max(20, Math.min(100, CONFIG.canvasDiameterPct));
   CONFIG.stockPerPoints = Math.max(1, CONFIG.stockPerPoints);
   CONFIG.autoFinishPct = Math.max(1, Math.min(100, CONFIG.autoFinishPct));
+  CONFIG.hapticPaintMs = Math.max(20, CONFIG.hapticPaintMs);
   ["sizeVarRange"].forEach(function (k) {
     var a = Math.max(20, Math.min(100, CONFIG[k][0])), b = Math.max(20, Math.min(100, CONFIG[k][1])); CONFIG[k] = [Math.min(a, b), Math.max(a, b)];
   });
