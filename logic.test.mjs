@@ -501,5 +501,16 @@ const baseSpec = { n: 3, shapes: ["circle"], sizeMin: 100, sizeMax: 100, tier2: 
   const r1 = mk(), sp = ctx.levelSpec(r1, meta, cfg2), a = ctx.createPaintRound(cfg2, sp, rng(4242)), b = ctx.createPaintRound(cfg2, sp, rng(4242));
   ok("18j same seed gives the same planets and orders", JSON.stringify(a.queue.slice(0, 5)) === JSON.stringify(b.queue.slice(0, 5)));
 }
+{
+  const meta = ctx.newMeta(), cfg3 = JSON.parse(JSON.stringify(ctx.CONFIG_DEFAULTS));
+  const run = ctx.newRun(meta, cfg3, rng(3)); run.level = 4; ctx.enterGalaxy(run, 0, cfg3, rng(1));
+  ok("19a a freshly entered galaxy is marked as not yet shown", run.galaxies[0].shown === false && ctx.pendingIntros(run).join() === "0");
+  run.galaxies[0].shown = true; ctx.enterGalaxy(run, 1, cfg3, rng(2));
+  ok("19b pending intros list the entered, unseen galaxy only", ctx.pendingIntros(run).join() === "1");
+  run.galaxies[1].shown = true;
+  ok("19c nothing pending once seen; old saves without the flag count as seen", ctx.pendingIntros(run).length === 0 && (delete run.galaxies[1].shown, ctx.pendingIntros(run).length === 0));
+  const dev = ctx.newRun(meta, cfg3, rng(4)); dev.level = 12; ctx.catchUpGalaxies(dev, cfg3, rng(5));
+  ok("19d a dev jump / catch-up leaves every skipped galaxy pending, in order", ctx.pendingIntros(dev).join() === "0,1,2,3");
+}
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
