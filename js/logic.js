@@ -1,5 +1,5 @@
 "use strict";
-var VERSION = "v1.8 build 2026-11-25 (run seed codes)";
+var VERSION = "v1.8.1 build 2026-11-25 (galaxy intros can no longer be skipped by reloading)";
 
 /* ================= PURE LOGIC (no DOM) - tested by logic.test.mjs ================= */
 // THE one tunable object. Everything here is live-editable in the settings panel.
@@ -652,13 +652,18 @@ function enterGalaxy(run, g, cfg, rng) {
   var names = comp ? GALAXY_NAMES[comp] : null;
   var q = rng(), gname = !names ? HOME_GALAXY : q < 0.13 ? pick(REAL_SYSTEMS, rng) : q < 0.25 ? pick(DEADPAN_SYSTEMS, rng) : pick(names, rng);
   var info = { g: g, name: gname, comp: comp, mixes: mixes, newTerrains: run.featured.slice(),
-    terrains: cfg.galaxyTerrains[g], moreTerrains: g > 0 && cfg.galaxyTerrains[g] > cfg.galaxyTerrains[g - 1] };
+    terrains: cfg.galaxyTerrains[g], moreTerrains: g > 0 && cfg.galaxyTerrains[g] > cfg.galaxyTerrains[g - 1], shown: false }; // shown: set once the player has clicked through the intro
   run.galaxies[g] = info;
   return info;
 }
 function catchUpGalaxies(run, cfg, rng) { // make sure every galaxy up to the current one has been entered (dev jumps, old saves)
   var g = levelInfo(run.level).g, out = [];
   for (var k = 0; k <= g; k++) if (!run.galaxies[k]) out.push(enterGalaxy(run, k, cfg, rng));
+  return out;
+}
+function pendingIntros(run) { // galaxies entered (so their bots, recipes and terrains are live) whose intro the player has not yet seen. Older saves have no flag and count as seen.
+  var out = [], g = levelInfo(run.level).g, k;
+  for (var k = 0; k <= g; k++) if (run.galaxies[k] && run.galaxies[k].shown === false) out.push(k);
   return out;
 }
 function levelMods(run, level) {

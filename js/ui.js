@@ -1,6 +1,6 @@
 "use strict";
 /* ================= UI: screens, input, game loop, settings ================= */
-var BUILD = "1.8"; // must match <meta name="tpbq-build"> in index.html
+var BUILD = "1.8.1"; // must match <meta name="tpbq-build"> in index.html
 document.body.classList.toggle("poster", POSTER()); // art style first, so nothing below can leave the game in the wrong look
 function bind(id, fn) { var el = $(id); if (el) el.onclick = fn; } // a missing button (old index.html) must never stop the game loading
 function loadMeta() {
@@ -341,6 +341,7 @@ function shipped(f) { // no grade mid-round: results wait for the review. Points
   el.classList.remove("go"); void el.offsetWidth; el.classList.add("go");
 }
 function beginLevel() {
+  if (mode === "story" && RUN && pendingIntros(RUN).length) { showIntros(pageRunMap); return; } // never start a level before its galaxy has been explained
   AudioSys.init(); sanitizeConfig();
   spec = mode === "story" ? levelSpec(RUN, META, CONFIG) : mode === "practice" ? practiceSpec() : arcadeSpec(CONFIG, t2Unlocked(), META);
   var seed = newSeed(); if (mode === "story") { seed = levelSeed(); RUN.levelSeed = 0; saveRun(); }
@@ -711,7 +712,7 @@ function botSlide(b) {
 function mixSlide(id) {
   var m = MIXES.filter(function (x) { return x.id === id; })[0];
   return { h: "NEW RECIPE: " + TERRAINS[m.out].name, html: recipeLine(m.a, "+ " + TERRAINS[m.b].name, m.out) +
-    "<p>Drop " + TERRAINS[m.a].name + " and " + TERRAINS[m.b].name + " into a well, in either order, and they combine into " + TERRAINS[m.out].name + ". If the second terrain is not a recipe with what is in the well, it just replaces it. Drag ERASE into a well to empty it.</p>",
+    "<p>Drag " + TERRAINS[m.a].name + " into your <b>WELL</b>, then drag " + TERRAINS[m.b].name + " in too (either order). They combine into " + TERRAINS[m.out].name + ". Then tap the well and paint with it. If the second terrain is not a recipe with what is in the well, it just replaces it. Drag ERASE into the well to empty it.</p>",
     draw: function (el) { wellArt(el, m.a, m.b, m.out); } };
 }
 function galaxySlides(info) {
@@ -733,8 +734,12 @@ function galaxySlides(info) {
 }
 function showGalaxy(g, then) {
   var info = RUN.galaxies[g];
-  slideshow("NEW GALAXY", galaxySlides(info), "gal:" + (info.comp || "home"), function () { AudioSys.sfx("go"); then(); });
+  slideshow("NEW GALAXY", galaxySlides(info), "gal:" + (info.comp || "home"), function () { info.shown = true; saveRun(); AudioSys.sfx("go"); then(); });
   AudioSys.sfx("fanfare");
+}
+function showIntros(then) { // every galaxy entered but not yet explained gets its intro, in order, before the player can reach a level
+  var p = pendingIntros(RUN);
+  if (!p.length) then(); else showGalaxy(p[0], function () { showIntros(then); });
 }
 function ownedText(run) {
   var b = BOTS.filter(function (x) { return run.owned.bots[x]; }).map(function (x) { return BOT_NAMES[x]; });
@@ -748,6 +753,7 @@ function modText(mods) { return mods.map(function (m) { return MOD_INFO[m][0]; }
 function pageRunMap() {
   mode = "story";
   var fresh = catchUpGalaxies(RUN, CONFIG, makeRng((levelSeed() ^ 0x9e3779b9) >>> 0)); if (fresh.length) saveRun();
+  if (pendingIntros(RUN).length) { showIntros(pageRunMap); return; } // resumed after a reload, a dev jump or an old save: the intro still comes first
   var h = '<div class="wal"><div><b>' + RUN.wallet + '</b>CREDITS</div><div><b>' + RUN.points + '</b>RUN POINTS</div><div><b>' + quotaFor(RUN.level, CONFIG) + '</b>NEXT QUOTA</div></div>';
   h += '<div class="rbtns"><button id="pgGo" class="pri">START ' + (levelInfo(RUN.level).boss ? "BOSS" : "LEVEL " + (levelInfo(RUN.level).l + 1)) + "</button></div>";
   h += '<div class="note">' + ownedText(RUN) + "</div>";
@@ -767,9 +773,7 @@ function pageRunMap() {
   };
 }
 function toRunMap() { // after the store: a new galaxy gets its intro first
-  var g = levelInfo(RUN.level).g;
-  if (!RUN.galaxies[g]) { enterGalaxy(RUN, g, CONFIG, makeRng((levelSeed() ^ 0x9e3779b9) >>> 0)); saveRun(); showGalaxy(g, pageRunMap); }
-  else pageRunMap();
+  pageRunMap(); // enters the new galaxy if needed and shows its intro first
 }
 var offers = [], rerolled = false, rerollN = 0;
 function seedRow() { return '<div class="rbtns"><button id="pgSeed" class="small">CURRENT RUN SEED</button></div>' + (RUN && RUN.replay ? '<div class="note"><b>REPLAY RUN</b> &middot; loaded from a seed. Its settings apply to this run only, and nothing from it (stock, high scores) is saved.</div>' : ""); }
